@@ -28,7 +28,7 @@ import axios from 'axios';
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/createSeat`, { seatNumber, price: priceData });
+      await axios.post(`${API_URL}/seats/createSeat`, { seatNumber, price: priceData });
       setMessage({ text: `Seat #${seatNumber} created successfully!`, type: 'success' });
       setSeatNumber('');
       setPriceData([]);
