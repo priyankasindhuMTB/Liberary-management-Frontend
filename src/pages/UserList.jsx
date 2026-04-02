@@ -11,7 +11,7 @@ export default function UserList() {
 
     const fetchUsers = async () => {
         try {
-            const res = await axios.get(`${API_URL}/users/all`);
+            const res = await axios.get(`${API_URL}/api/users/all`);
 
             console.log("FULL RESPONSE:", res.data);
 
@@ -23,7 +23,7 @@ export default function UserList() {
             await Promise.all(
                 userData.map(async (user) => {
                     try {
-                        const pRes = await axios.get(`${API_URL}/payment/user-payment/${user._id}`);
+                        const pRes = await axios.get(`${API_URL}/api/payment/user-payment/${user._id}`);
                         paymentData[user._id] = pRes.data;
                         console.log("Payment API:", pRes.data);
                     } catch {
@@ -43,7 +43,7 @@ export default function UserList() {
     const handlePayment = async () => {
         if (!amount || amount <= 0) return;
         try {
-            await axios.post(`${API_URL}/payment/pay`, {
+            await axios.post(`${API_URL}/api/payment/pay`, {
                 userId: selectedUser._id,
                 seatId: selectedUser.seatId?._id,
                 shiftId: selectedUser.shiftId?._id,

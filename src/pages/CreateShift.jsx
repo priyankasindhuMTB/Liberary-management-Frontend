@@ -15,7 +15,7 @@ const CreateShift = () => {
     setMessage({ text: "", type: "" });
 
     try {
-      await axios.post(`${API_URL}/shifts/create-shifts`, {
+      await axios.post(`${API_URL}/api/shifts/create-shifts`, {
         name,
         startTime,
         endTime,

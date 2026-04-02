@@ -15,7 +15,7 @@ const Registration = () => {
 
   const fetchShifts = async () => {
     try {
-      const res = await axios.get(`${API_URL}/shifts/get-shifts`);
+      const res = await axios.get(`${API_URL}/api/shifts/get-shifts`);
       setShifts(res.data);
     } catch (error) {
       console.error("Error fetching shifts", error);
@@ -35,14 +35,14 @@ const Registration = () => {
 
   const fetchSeats = async () => {
     try {
-      const res = await axios.get(`${API_URL}/seats/getSeats`);
+      const res = await axios.get(`${API_URL}/api/seats/getSeats`);
       setSeats(res.data);
     } catch (error) { console.log(error); }
   };
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`${API_URL}/users/all`);
+      const res = await axios.get(`${API_URL}/api/users/all`);
       setUsers(res.data.users);
     } catch (error) { console.log("error", error); }
   };
@@ -57,7 +57,7 @@ const Registration = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/users/register`, formData);
+      await axios.post(`${API_URL}/api/users/register`, formData);
       setMessage({ text: "Member registered successfully!", type: "success" });
       setFormData({ name: "", email: "", password: "", seatId: "", shiftId: "" });
       fetchSeats();

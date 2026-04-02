@@ -20,7 +20,7 @@ import axios from 'axios';
   };
  
   const fetchShifts = async () => {
-    const res = await axios.get(`${API_URL}/shifts/get-shifts`);
+    const res = await axios.get(`${API_URL}/api/shifts/get-shifts`);
     setShifts(res.data);
   };
  
@@ -28,7 +28,7 @@ import axios from 'axios';
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/seats/createSeat`, { seatNumber, price: priceData });
+      await axios.post(`${API_URL}/api/seats/createSeat`, { seatNumber, price: priceData });
       setMessage({ text: `Seat #${seatNumber} created successfully!`, type: 'success' });
       setSeatNumber('');
       setPriceData([]);
