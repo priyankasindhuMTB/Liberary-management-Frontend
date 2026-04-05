@@ -2,14 +2,15 @@
 // ─── CreateSeat.jsx ───────────────────────────────────────────────────────────
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
- 
- const CreateSeat = () => {
+
+const CreateSeat = () => {
   const [seatNumber, setSeatNumber] = useState('');
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [seats, setSeats] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [priceData, setPriceData] = useState([]);
   const [loading, setLoading] = useState(false);
-   const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handlePriceChange = (shiftId, value) => {
     setPriceData(prev => {
@@ -18,17 +19,28 @@ import axios from 'axios';
       return [...prev, { shiftId, amount: Number(value) }];
     });
   };
- 
+
+
+  const fetchSeats = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/seats/getSeats`);
+      console.log("Seats:", res.data);
+      setSeats(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
   const fetchShifts = async () => {
     const res = await axios.get(`${API_URL}/api/shifts/get-shifts`);
     setShifts(res.data);
   };
- 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       await axios.post(`${API_URL}/api/seats/createSeat`, { seatNumber, price: priceData });
+      fetchSeats();
       setMessage({ text: `Seat #${seatNumber} created successfully!`, type: 'success' });
       setSeatNumber('');
       setPriceData([]);
@@ -38,9 +50,13 @@ import axios from 'axios';
       setLoading(false);
     }
   };
- 
-  useEffect(() => { fetchShifts(); }, []);
- 
+
+  useEffect(() => {
+    fetchShifts();
+    fetchSeats()
+
+  }, []);
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8f9fc', fontFamily: "'DM Sans', 'Segoe UI', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 460 }}>
@@ -52,14 +68,21 @@ import axios from 'axios';
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1a1d2e', margin: 0 }}>Add New Seat</h1>
           <p style={{ fontSize: 14, color: '#8a8fa8', marginTop: 6 }}>Configure seat number and shift pricing</p>
         </div>
- 
+
         <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
           {message.text && (
             <div style={{ padding: '12px 20px', background: message.type === 'success' ? '#ecfdf5' : '#fef2f2', color: message.type === 'success' ? '#059669' : '#dc2626', borderBottom: `1px solid ${message.type === 'success' ? '#d1fae5' : '#fecaca'}`, fontSize: 13, fontWeight: 600 }}>
               {message.type === 'success' ? '✓ ' : '✗ '}{message.text}
             </div>
           )}
- 
+          <div>
+            <h3>All Seats</h3>
+            {seats.map((seat) => (
+              <div key={seat._id}>
+                Seat No: {seat.seatNumber}
+              </div>
+            ))}
+          </div>
           <div style={{ padding: 28 }}>
             <form onSubmit={handleSubmit}>
               {/* Seat Number */}
@@ -71,7 +94,7 @@ import axios from 'axios';
                   style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 18, fontWeight: 700, color: '#1a1d2e', outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
- 
+
               {/* Shift Pricing */}
               {shifts.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
@@ -98,7 +121,7 @@ import axios from 'axios';
                   </div>
                 </div>
               )}
- 
+
               <button type="submit" disabled={loading} style={{ width: '100%', padding: 13, background: loading ? '#6ee7b7' : 'linear-gradient(135deg, #065f46, #10b981)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}>
                 {loading ? 'Creating...' : 'Create Seat'}
               </button>
@@ -110,4 +133,3 @@ import axios from 'axios';
   );
 };
 export default CreateSeat
- 

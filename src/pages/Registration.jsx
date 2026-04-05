@@ -17,6 +17,7 @@ const Registration = () => {
     try {
       const res = await axios.get(`${API_URL}/api/shifts/get-shifts`);
       setShifts(res.data);
+      console.log("resss",res)
     } catch (error) {
       console.error("Error fetching shifts", error);
     }
@@ -27,19 +28,29 @@ const Registration = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const occupiedSeatIdsInSelectedSlot = users
-    .filter(u => u.shiftId?._id === formData.shiftId && u.status === 'Active')
-    .map(u => u.seatId?._id);
+  // const occupiedSeatIdsInSelectedSlot = users
+  //   .filter(u => u.shiftId?._id === formData.shiftId && u.status === 'Active')
+  //   .map(u => u.seatId?._id);
+
+  const occupiedSeatIdsInSelectedSlot = (users || [])
+  .filter(u => 
+    u.status === 'Active' && 
+    (u.shiftId?._id === formData.shiftId || u.shiftId === formData.shiftId)
+  )
+  .map(u => u.seatId?._id || u.seatId);
 
   const availableSeats = seats.filter(seat => !occupiedSeatIdsInSelectedSlot.includes(seat._id));
+  console.log("AVAILABLE SEATS >>>>>>>>>>>",availableSeats)
 
-  const fetchSeats = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/api/seats/getSeats`);
-      setSeats(res.data);
-    } catch (error) { console.log(error); }
-  };
-
+const fetchSeats = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/api/seats/getSeats`);
+    console.log("Seats:", res.data);
+    setSeats(res.data);
+  } catch (err) {
+    console.log(err);
+  }
+};
   const fetchUsers = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/users/all`);

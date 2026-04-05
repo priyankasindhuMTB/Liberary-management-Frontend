@@ -64,9 +64,7 @@ export default function UserList() {
   try {
     const newStatus = user.status === "Active" ? "Inactive" : "Active";
 
-    await axios.put(`${API_URL}/users/status/${user._id}`, {
-      status: newStatus
-    });
+ await axios.put(`${API_URL}/api/users/status/${user._id}`, { status: newStatus });
 
     // refresh data
     fetchUsers();
