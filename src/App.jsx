@@ -32,7 +32,7 @@ import Registration from './pages/Registration'
 import UserList from './pages/UserList'
 import CreateShift from './pages/CreateShift'
 import CreateSeat from './pages/CreateSeat'
-import Navbar from './components/Navbar'
+import Navbar from './pages/Navbar'
 import './App.css'
 
 function App() {
