@@ -159,12 +159,12 @@ export default function UserList() {
 
                                             {/* Status Badge */}
                                             <span className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black
-      ${user.status === "Active"
+                                            ${user.status === "Active"
                                                     ? "bg-green-50 text-[#34a853]"
                                                     : "bg-red-50 text-[#eb5757]"}`}>
 
                                                 <div className={`w-1.5 h-1.5 rounded-full 
-        ${user.status === "Active" ? "bg-[#34a853]" : "bg-[#eb5757]"}`}>
+                                                 ${user.status === "Active" ? "bg-[#34a853]" : "bg-[#eb5757]"}`}>
                                                 </div>
 
                                                 {user.status}
@@ -174,11 +174,11 @@ export default function UserList() {
                                             <button
                                                 onClick={() => toggleStatus(user)}
                                                 className={`relative w-12 h-6 rounded-full transition-all duration-300
-        ${user.status === "Active" ? "bg-[#34a853]" : "bg-gray-300"}`}
-                                            >
+                                                ${user.status === "Active" ? "bg-[#34a853]" : "bg-gray-300"}`}
+                                                >
                                                 <div
                                                     className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300
-          ${user.status === "Active" ? "translate-x-6" : ""}`}
+                                                    ${user.status === "Active" ? "translate-x-6" : ""}`}
                                                 ></div>
                                             </button>
 

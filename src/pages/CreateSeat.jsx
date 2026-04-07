@@ -200,7 +200,7 @@ const  CreateSeat = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
+    <div className="bg-slate-100 p-6">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
         {/* ── Left: Form (2/5) ── */}
