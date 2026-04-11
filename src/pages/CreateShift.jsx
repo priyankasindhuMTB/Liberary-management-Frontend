@@ -1,44 +1,78 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const CreateShift = () => {
   const [name, setName] = useState("");
+  const [shifts, setShifts] = useState([]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [message, setMessage] = useState({ text: "", type: "" });
   const [loading, setLoading] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true);
     setMessage({ text: "", type: "" });
 
     try {
-      await axios.post(`${API_URL}/api/shifts/create-shifts`, {
-        name,
-        startTime,
-        endTime,
-      });
+      const token = localStorage.getItem("token")
+    const res= await axios.post(
+  `${API_URL}/api/shifts/create-shifts`,
+  {
+    name,
+    startTime,
+    endTime,
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`, // ✅ FIXED
+    },
+  }
+);
 
+console.log("res",res)
       setMessage({ text: "Shift created successfully!", type: "success" });
       setName("");
       setStartTime("");
       setEndTime("");
+      await fetchShifts();
     } catch (error) {
-      setMessage({ 
-        text: error.response?.data?.message || "Error creating shift", 
-        type: "error" 
+      setMessage({
+        text: error.response?.data?.message || "Error creating shift",
+        type: "error"
       });
     } finally {
       setLoading(false);
     }
   };
 
+const fetchShifts = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await axios.get(`${API_URL}/api/shifts/get-shifts`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.status === 200) {
+      setShifts(res.data);
+    }
+
+  } catch (error) {
+    console.error("Error fetching shifts", error);
+  }
+};
+  useEffect(()=>{
+    fetchShifts()
+
+  },[])
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
       <div className="w-full max-w-md">
-        
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-gradient-to-br from-purple-700 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-200 text-2xl">
@@ -50,19 +84,18 @@ const CreateShift = () => {
 
         {/* Card */}
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 overflow-hidden border border-slate-100">
-          
+
           {/* Status Message */}
           {message.text && (
-            <div className={`px-6 py-3 flex items-center gap-2 text-sm font-semibold border-b ${
-              message.type === 'success' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-red-50 text-red-700 border-red-100'
-            }`}>
+            <div className={`px-6 py-3 flex items-center gap-2 text-sm font-semibold border-b ${message.type === 'success' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-red-50 text-red-700 border-red-100'
+              }`}>
               <span>{message.type === 'success' ? '✓' : '✕'}</span>
               {message.text}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            
+
             {/* Shift Name */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Shift Name</label>
@@ -104,17 +137,16 @@ const CreateShift = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-4 rounded-xl text-white font-bold text-base shadow-lg transition-all active:scale-[0.98] ${
-                loading 
-                ? 'bg-purple-300 cursor-wait' 
-                : 'bg-gradient-to-r from-purple-700 to-purple-600 hover:shadow-purple-200 hover:brightness-110'
-              }`}
+              className={`w-full py-4 rounded-xl text-white font-bold text-base shadow-lg transition-all active:scale-[0.98] ${loading
+                  ? 'bg-purple-300 cursor-wait'
+                  : 'bg-gradient-to-r from-purple-700 to-purple-600 hover:shadow-purple-200 hover:brightness-110'
+                }`}
             >
               {loading ? 'Creating...' : 'Create Shift'}
             </button>
           </form>
         </div>
-        
+
         {/* Help text */}
         <p className="text-center text-slate-400 text-xs mt-6">
           Shifts created here will be available for selection during member registration.

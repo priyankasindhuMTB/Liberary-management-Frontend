@@ -35,8 +35,10 @@ import CreateSeat from './pages/CreateSeat'
 import Navbar from './pages/Navbar'
 import './App.css'
 import Login from './pages/Login'
+import SuperAdminLogin from './pages/SuperAdminLogin'
 import AdminRequest from './pages/AdminRequest'
 import SuperAdmin from './pages/SuperAdmin'
+import SetupFirstSuper from './pages/SetupFirstSuper'
 
 function App() {
   return (
@@ -44,6 +46,9 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+        <Route path="/setup-super" element={<SetupFirstSuper />} />
         <Route path='/request' element={<AdminRequest/>}/>
         <Route path='/super-admin' element={<SuperAdmin/>}/>
       <Route path="/dashboard" element={<Registration />} />

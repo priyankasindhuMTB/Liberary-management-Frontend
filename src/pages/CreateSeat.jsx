@@ -145,6 +145,11 @@ const  CreateSeat = () => {
   const [loading, setLoading] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
 
+  const authHeaders = () => {
+    const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const handlePriceChange = (shiftId, value) => {
     setPriceData(prev => {
       const existing = prev.find(p => p.shiftId === shiftId);
@@ -155,21 +160,21 @@ const  CreateSeat = () => {
 
   const fetchSeats = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/seats/getSeats`);
-      setSeats(res.data);
+      const res = await axios.get(`${API_URL}/api/seats/getSeats`, {
+        headers: authHeaders(),
+      });
+      if (res.status === 200 && Array.isArray(res.data)) setSeats(res.data);
     } catch (err) {
       console.log(err);
     }
   };
 
-  // const fetchShifts = async () => {
-  //   const res = await axios.get(`${API_URL}/api/shifts/get-shifts`);
-  //   setShifts(res.data);
-  // };
 
   const fetchShifts = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/shifts/get-shifts`);
+    const res = await axios.get(`${API_URL}/api/shifts/get-shifts`, {
+      headers: authHeaders(),
+    });
     setShifts(res.data);
   } catch (err) {
     console.log("Shifts error:", err);
@@ -182,7 +187,11 @@ const  CreateSeat = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/seats/createSeat`, { seatNumber, price: priceData });
+      await axios.post(
+        `${API_URL}/api/seats/createSeat`,
+        { seatNumber, price: priceData },
+        { headers: authHeaders() }
+      );
       fetchSeats();
       setMessage({ text: `Seat #${seatNumber} created successfully!`, type: 'success' });
       setSeatNumber('');

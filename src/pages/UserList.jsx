@@ -9,9 +9,16 @@ export default function UserList() {
     const [filter, setFilter] = useState("All");
     const API_URL = import.meta.env.VITE_API_URL;
 
+    const authHeaders = () => {
+        const token = localStorage.getItem("token");
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    };
+
     const fetchUsers = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/users/all`);
+            const res = await axios.get(`${API_URL}/api/users/all`, {
+                headers: authHeaders(),
+            });
 
             console.log("FULL RESPONSE:", res.data);
 
@@ -23,7 +30,10 @@ export default function UserList() {
             await Promise.all(
                 userData.map(async (user) => {
                     try {
-                        const pRes = await axios.get(`${API_URL}/api/payment/user-payment/${user._id}`);
+                        const pRes = await axios.get(
+                            `${API_URL}/api/payment/user-payment/${user._id}`,
+                            { headers: authHeaders() }
+                        );
                         paymentData[user._id] = pRes.data;
                         console.log("Payment API:", pRes.data);
                     } catch {
@@ -43,12 +53,15 @@ export default function UserList() {
     const handlePayment = async () => {
         if (!amount || amount <= 0) return;
         try {
-            await axios.post(`${API_URL}/api/payment/pay`, {
-                userId: selectedUser._id,
-                seatId: selectedUser.seatId?._id,
-                shiftId: selectedUser.shiftId?._id,
-                amount: Number(amount)
-            });
+            await axios.post(
+                `${API_URL}/api/payment/pay`,
+                {
+                    userId: selectedUser._id,
+                    seatId: selectedUser.seatId?._id,
+                    amount: Number(amount),
+                },
+                { headers: authHeaders() }
+            );
             setAmount("");
             setSelectedUser(null);
             fetchUsers(); // Refresh numbers immediately
@@ -64,7 +77,11 @@ export default function UserList() {
   try {
     const newStatus = user.status === "Active" ? "Inactive" : "Active";
 
- await axios.put(`${API_URL}/api/users/status/${user._id}`, { status: newStatus });
+ await axios.put(
+                `${API_URL}/api/users/status/${user._id}`,
+                { status: newStatus },
+                { headers: authHeaders() }
+            );
 
     // refresh data
     fetchUsers();

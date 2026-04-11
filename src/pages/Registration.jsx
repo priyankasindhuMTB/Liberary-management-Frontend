@@ -13,24 +13,30 @@
     const [showPass, setShowPass] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL;
 
-    const fetchShifts = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/shifts/get-shifts`);
-        setShifts(res.data);
-        console.log("resss",res)
-      } catch (error) {
-        console.error("Error fetching shifts", error);
-      }
-    };
+const fetchShifts = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await axios.get(`${API_URL}/api/shifts/get-shifts`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.status === 200) {
+      setShifts(res.data);
+    }
+
+    console.log("resss", res);
+  } catch (error) {
+    console.error("Error fetching shifts", error);
+  }
+};
 
     const handleChange = (e) => {
       const { name, value } = e.target;
       setFormData({ ...formData, [name]: value });
     };
-
-    // const occupiedSeatIdsInSelectedSlot = users
-    //   .filter(u => u.shiftId?._id === formData.shiftId && u.status === 'Active')
-    //   .map(u => u.seatId?._id);
 
     const occupiedSeatIdsInSelectedSlot = (users || [])
     .filter(u => 
@@ -42,21 +48,38 @@
     const availableSeats = seats.filter(seat => !occupiedSeatIdsInSelectedSlot.includes(seat._id));
     console.log("AVAILABLE SEATS >>>>>>>>>>>",availableSeats)
 
-  const fetchSeats = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/api/seats/getSeats`);
-      console.log("Seats:", res.data);
-      setSeats(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-    const fetchUsers = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/users/all`);
-        setUsers(res.data.users);
-      } catch (error) { console.log("error", error); }
-    };
+const fetchSeats = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await axios.get(`${API_URL}/api/seats/getSeats`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setSeats(res.data);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+
+ const fetchUsers = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await axios.get(`${API_URL}/api/users/all`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setUsers(res.data.users);
+  } catch (error) {
+    console.log("error", error);
+  }
+};
 
     useEffect(() => {
       fetchSeats();
@@ -68,7 +91,10 @@
       e.preventDefault();
       setLoading(true);
       try {
-        await axios.post(`${API_URL}/api/users/register`, formData);
+        const token = localStorage.getItem("token");
+        await axios.post(`${API_URL}/api/users/register`, formData, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         setMessage({ text: "Member registered successfully!", type: "success" });
         setFormData({ name: "", email: "", password: "", seatId: "", shiftId: "" });
         fetchSeats();
