@@ -116,6 +116,13 @@ const Login = () => {
       localStorage.setItem("admin", JSON.stringify(res.data.admin));
       navigate("/dashboard");
 
+
+      if (res.data.admin.role === "super_admin") {
+        navigate("/super-admin");
+      } else {
+        navigate("/dashboard");
+      }
+
     } catch (err) {
       console.error("❌ Login Error:", err.response?.data || err.message);
 
@@ -130,13 +137,14 @@ const Login = () => {
   return (
     <div className="flex justify-center items-center h-screen">
       <form onSubmit={handleLogin} className="bg-white p-4 rounded shadow w-80">
+      <h2 className="text-xl font-bold mb-4">Admin Login</h2>
         <h2 className="text-xl font-bold mb-1">Library Admin Login</h2>
         <p className="text-xs text-slate-500 mb-4">Daily library work — members, seats, shifts.</p>
 
         {error && (
           <div className="text-sm mb-3 space-y-2">
             <p className="text-red-600">{error}</p>
-            {error === USE_SUPER_ADMIN_LOGIN_MSG && (
+            {error.includes("Super admins must use") && (
               <p>
                 <Link to="/super-admin/login" className="text-blue-600 underline font-medium">
                   Open Super Admin login
