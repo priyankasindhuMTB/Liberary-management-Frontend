@@ -1,8 +1,17 @@
-
-
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+// Icons for a professional touch
+import { 
+  Users, 
+  CheckCircle, 
+  AlertTriangle, 
+  ShieldAlert, 
+  Loader2, 
+  ExternalLink,
+  ShieldCheck,
+  RefreshCw
+} from "lucide-react";
 
 function readAdminRole() {
   try {
@@ -21,33 +30,24 @@ const SuperAdmin = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [approveError, setApproveError] = useState("");
-  /** loading | yes | no | unknown */
   const [superAdminCheck, setSuperAdminCheck] = useState("loading");
   const [canApprove, setCanApprove] = useState(false);
   const [devBypassActive, setDevBypassActive] = useState(false);
   const [capabilityLoaded, setCapabilityLoaded] = useState(false);
-  /** Set when approve-capability fails with 401/403 (e.g. expired JWT) — not the same as "library admin cannot approve". */
   const [authRejected, setAuthRejected] = useState(false);
 
   const isSuperAdmin = useMemo(() => readAdminRole() === "super_admin", []);
 
   const fetchRequests = async () => {
-    console.log("📥 Fetching Requests...");
-
     try {
       setLoading(true);
-
       const res = await axios.get(`${API_URL}/api/admin-request`, {
-      headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
-
-      console.log("✅ Requests:", res.data);
-
       setRequests(res.data);
       setAuthRejected(false);
-
     } catch (err) {
-      console.error("❌ Fetch Error:", err.response?.data || err.message);
+      console.error("Fetch Error:", err.response?.data || err.message);
       const s = err.response?.status;
       if (s === 401 || s === 403) setAuthRejected(true);
     } finally {
@@ -55,28 +55,18 @@ const SuperAdmin = () => {
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  useEffect(() => { fetchRequests(); }, []);
 
   useEffect(() => {
-    if (!API_URL) {
-      setSuperAdminCheck("unknown");
-      return;
-    }
-    axios
-      .get(`${API_URL}/api/admin/has-super-admin`)
+    if (!API_URL) { setSuperAdminCheck("unknown"); return; }
+    axios.get(`${API_URL}/api/admin/has-super-admin`)
       .then((r) => setSuperAdminCheck(r.data?.hasSuperAdmin ? "yes" : "no"))
       .catch(() => setSuperAdminCheck("unknown"));
   }, [API_URL]);
 
   useEffect(() => {
-    if (!API_URL || !token) {
-      setCapabilityLoaded(true);
-      return;
-    }
-    axios
-      .get(`${API_URL}/api/admin/approve-capability`, {
+    if (!API_URL || !token) { setCapabilityLoaded(true); return; }
+    axios.get(`${API_URL}/api/admin/approve-capability`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((r) => {
@@ -96,132 +86,146 @@ const SuperAdmin = () => {
   const approveDisabled = capabilityLoaded ? !canApprove : true;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Pending Requests</h1>
-
-      {!isSuperAdmin && superAdminCheck === "no" && (
-        <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 text-sm">
-          <p className="font-bold mb-2">No super admin in the database yet</p>
-          <p className="mb-3">
-            Approve needs a <code className="bg-emerald-100 px-1 rounded">super_admin</code> account. Create the first
-            one in the browser (no terminal):
-          </p>
-          <Link
-            to="/setup-super"
-            className="inline-block bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg no-underline hover:bg-emerald-700"
-          >
-            Open first-time super admin setup
-          </Link>
-          <p className="mt-3 text-emerald-800/90">
-            Then use <Link to="/super-admin/login" className="font-semibold underline">Super Admin login</Link> with
-            the new email, and return here to approve.
-          </p>
-        </div>
-      )}
-
-      {!isSuperAdmin && superAdminCheck === "unknown" && (
-        <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-700 text-sm">
-          <p className="mb-2">Could not verify super admin status. If Approve does nothing or errors, try:</p>
-          <ul className="list-disc ml-5 space-y-1">
-            <li>
-              <Link to="/setup-super" className="text-blue-600 underline font-medium">
-                First-time super admin setup
-              </Link>{" "}
-              (only if no super admin exists yet)
-            </li>
-            <li>Or promote your account from the backend terminal (see below).</li>
-          </ul>
-        </div>
-      )}
-
-      {devBypassActive && (
-        <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sky-900 text-sm">
-          Dev mode: <code className="bg-sky-100 px-1 rounded">ALLOW_LIBRARY_ADMIN_APPROVE=true</code> in backend{" "}
-          <code className="bg-sky-100 px-1 rounded">.env</code> — library admins can approve. Remove this in production.
-        </div>
-      )}
-
-      {capabilityLoaded && authRejected && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-900 text-sm">
-          <p className="font-bold mb-2">Session expired or invalid token</p>
-          <p className="mb-3">
-            The list of requests may still show, but approving requires a valid login. Your JWT lasts about one day —
-            log in again to refresh it.
-          </p>
-          <Link
-            to="/super-admin/login"
-            className="inline-block bg-red-700 text-white font-bold px-4 py-2 rounded-lg no-underline hover:bg-red-800"
-          >
-            Super Admin login
-          </Link>
-        </div>
-      )}
-
-      {capabilityLoaded && !authRejected && !canApprove && superAdminCheck === "yes" && (
-        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 text-sm">
-          <p className="font-bold mb-2">Approve is only allowed for super admins</p>
-          <p className="mb-2">
-            You are logged in as a <strong>library admin</strong>. The Approve button stays off until the server allows
-            it.
-          </p>
-          <p className="mb-2 font-semibold">Quick local fix (development only)</p>
-          <p className="mb-2">
-            Add to <code className="bg-amber-100 px-1 rounded">backend/.env</code>:{" "}
-            <code className="bg-amber-100 px-1 rounded">ALLOW_LIBRARY_ADMIN_APPROVE=true</code> — restart the backend —
-            refresh this page. Then Approve works without promoting your user.
-          </p>
-          <p className="mb-2 font-semibold">Proper fix</p>
-          <p className="mb-2">
-            Run <code className="bg-amber-100 px-1 rounded">npm run promote:superadmin -- you@email.com</code> in the
-            backend folder (your login email), then <strong>log out and log in again</strong>.
-          </p>
-          <p>Or log in with an account that is already <code className="bg-amber-100 px-1 rounded">super_admin</code>.</p>
-        </div>
-      )}
-
-      {approveError && (
-        <p className="mb-4 text-sm text-red-600">{approveError}</p>
-      )}
-
-      {loading ? (
-        <p>Loading...</p>
-      ) : requests.length === 0 ? (
-        <p className="text-slate-500">No pending requests.</p>
-      ) : (
-        requests.map((r) => (
-          <div key={r._id} className="border p-3 mb-2 flex justify-between items-center gap-4">
-            <div>
-              <p>{r.name}</p>
-              <p>{r.email}</p>
-              <p>{r.libraryName}</p>
-            </div>
-
-            <button
-              type="button"
-              disabled={approveDisabled}
-              onClick={async () => {
-                setApproveError("");
-                try {
-                  await axios.put(
-                    `${API_URL}/api/admin-request/approve/${r._id}`,
-                    {},
-                    { headers: { Authorization: `Bearer ${token}` } }
-                  );
-                  fetchRequests();
-                } catch (err) {
-                  const msg = err.response?.data?.message || err.message;
-                  setApproveError(String(msg));
-                }
-              }}
-              className={`px-4 py-2 rounded text-white ${
-                approveDisabled ? "bg-slate-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
-              }`}
-            >
-              Approve
-            </button>
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">System Administration</h1>
+            <p className="text-slate-500 mt-1 flex items-center gap-2">
+              <Users size={16} /> Manage pending library access requests
+            </p>
           </div>
-        ))
-      )}
+          <button 
+            onClick={fetchRequests} 
+            className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm transition-all"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh Data
+          </button>
+        </div>
+
+        {/* Informational Banners */}
+        <div className="space-y-4 mb-8">
+          {/* Dev Bypass Banner */}
+          {devBypassActive && (
+            <div className="flex items-center gap-3 bg-sky-50 border border-sky-100 p-3 rounded-xl text-sky-800 text-sm">
+              <ShieldCheck size={20} className="text-sky-500" />
+              <p><strong>Developer Mode:</strong> Bypass active. Any admin can approve requests for testing.</p>
+            </div>
+          )}
+
+          {/* Setup Required Banner */}
+          {!isSuperAdmin && superAdminCheck === "no" && (
+            <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex gap-3">
+                <ShieldAlert size={24} className="text-emerald-600 shrink-0" />
+                <div>
+                  <h3 className="font-bold text-emerald-900">First-time Setup Required</h3>
+                  <p className="text-emerald-700 text-sm">No super admin found. Create the primary account to begin.</p>
+                </div>
+              </div>
+              <Link to="/setup-super" className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap">
+                Initialize System
+              </Link>
+            </div>
+          )}
+
+          {/* Access Restricted Banner */}
+          {capabilityLoaded && !authRejected && !canApprove && superAdminCheck === "yes" && (
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-3 text-amber-900 text-sm shadow-sm">
+              <AlertTriangle size={20} className="text-amber-600 shrink-0" />
+              <div>
+                <p className="font-bold">Insufficient Permissions</p>
+                <p className="mt-1">Only super admins can approve. Log in with higher credentials or enable bypass in <code>.env</code>.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Session Expired */}
+          {capabilityLoaded && authRejected && (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center justify-between text-red-900 text-sm shadow-sm">
+              <div className="flex gap-3">
+                <ShieldAlert size={20} className="text-red-600" />
+                <p className="font-bold">Session Expired</p>
+              </div>
+              <Link to="/super-admin/login" className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-red-700 transition-colors">
+                Log In Again
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Requests List */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-800 px-1">Pending Approval ({requests.length})</h2>
+          
+          {loading && requests.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center text-slate-400">
+              <Loader2 className="animate-spin mb-4" size={32} />
+              <p>Fetching database records...</p>
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 shadow-sm">
+              <CheckCircle className="mx-auto mb-3 text-slate-300" size={40} />
+              <p className="font-medium text-lg text-slate-600">All caught up!</p>
+              <p className="text-sm">There are no pending admin requests at this time.</p>
+            </div>
+          ) : (
+            requests.map((r) => (
+              <div key={r._id} className="group bg-white border border-slate-200 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md hover:border-indigo-100 transition-all duration-200 shadow-sm">
+                <div className="flex gap-4 items-center">
+                  <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg uppercase shadow-inner">
+                    {r.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{r.name}</h3>
+                    <p className="text-sm text-slate-500 font-medium">{r.email}</p>
+                    <div className="flex items-center gap-1.5 mt-1 text-xs text-indigo-500 font-bold bg-indigo-50/50 w-fit px-2 py-0.5 rounded-md">
+                      <ExternalLink size={12} />
+                      {r.libraryName}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full sm:w-auto flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={approveDisabled}
+                    onClick={async () => {
+                      setApproveError("");
+                      try {
+                        await axios.put(
+                          `${API_URL}/api/admin-request/approve/${r._id}`,
+                          {},
+                          { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        fetchRequests();
+                      } catch (err) {
+                        setApproveError(err.response?.data?.message || err.message);
+                      }
+                    }}
+                    className={`w-full sm:w-32 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 ${
+                      approveDisabled
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95"
+                    }`}
+                  >
+                    {approveDisabled ? <ShieldAlert size={16} /> : <CheckCircle size={16} />}
+                    Approve
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+          
+          {approveError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-red-600 text-xs font-bold animate-pulse">
+              <AlertTriangle size={14} /> {approveError}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

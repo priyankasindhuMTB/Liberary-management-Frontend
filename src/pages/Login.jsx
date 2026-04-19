@@ -1,77 +1,7 @@
-// import React, { useState } from "react";
-// import axios from "axios";
-// import { useNavigate } from "react-router-dom";
-
-// const Login = () => {
-//   const [form, setForm] = useState({ email: "", password: "" });
-//   const navigate = useNavigate();
-//   const API_URL = import.meta.env.VITE_API_URL;
-//   console.log("Api url",API_URL)
-
-//     const handleChange = (e) => {
-//       const { name, value } = e.target;
-//       setForm({ ...form, [name]: value });
-//     };
-
-//   const handleLogin = async (e) => {
-//     e.preventDefault();
-
-//     try {
-//       const res = await axios.post(`${API_URL}/api/admin/login`, form);
-
-//       localStorage.setItem("token", res.data.token);
-//       localStorage.setItem("admin", JSON.stringify(res.data.admin));
-
-//       if (res.data.admin.role === "superadmin") {
-//         navigate("/super-admin");
-//       } else {
-//         navigate("/dashboard");
-//       }
-
-//     } catch (err) {
-//       alert("Login failed");
-//     }
-//   };
-
-//   return (
-//     <div className="flex justify-center items-center h-screen">
-//       <form onSubmit={handleLogin} className="bg-white p-2 rounded shadow">
-//         <h2 className="text-xl font-bold mb-4">Admin Login</h2>
-
-//         <input
-//           type="email"
-//           name="email"
-//           value={form.email}
-//           placeholder="Email"
-//           className="block mb-3 p-2 border w-full"
-//           onChange={handleChange}
-//         />
-
-//         <input
-//         name="password"
-//           type="password"
-//           value={form.password}
-//           placeholder="Password"
-//           className="block mb-3 p-2 border w-full"
-//           onChange={handleChange}
-//         />
-
-//         <button className="bg-blue-500 text-white px-4 py-2 w-full">
-//           Login
-//         </button>
-//       </form>
-//     </div>
-//   );
-// };
-
-// export default Login;
-
 import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-
-const USE_SUPER_ADMIN_LOGIN_MSG =
-  "Super admins must use the Super Admin login page (separate from library admin).";
+import { Mail, Lock, LogIn, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 
 const Login = () => {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -89,43 +19,23 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
-    console.log("🔐 Login Data:", form);
-
     try {
       setLoading(true);
       setError("");
       setErrorCode("");
 
-      if (!API_URL) {
-        setError("Missing VITE_API_URL — set it in frontend/.env (e.g. VITE_API_URL=http://localhost:5001)");
-        return;
-      }
-
       const res = await axios.post(`${API_URL}/api/admin/login`, form);
+      const { admin, token } = res.data;
 
-      console.log("✅ Login Success:", res.data);
+      localStorage.setItem("token", token);
+      localStorage.setItem("admin", JSON.stringify(admin));
 
-      const role = res.data?.admin?.role;
-      if (role === "super_admin") {
-        setError(USE_SUPER_ADMIN_LOGIN_MSG);
-        return;
-      }
-
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("admin", JSON.stringify(res.data.admin));
-      navigate("/dashboard");
-
-
-      if (res.data.admin.role === "super_admin") {
+      if (admin.role === "super_admin") {
         navigate("/super-admin");
       } else {
-        navigate("/dashboard");
+        navigate("/users");
       }
-
     } catch (err) {
-      console.error("❌ Login Error:", err.response?.data || err.message);
-
       const data = err.response?.data;
       setError(data?.message || "Login failed");
       setErrorCode(data?.code || "");
@@ -135,58 +45,118 @@ const Login = () => {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <form onSubmit={handleLogin} className="bg-white p-4 rounded shadow w-80">
-      <h2 className="text-xl font-bold mb-4">Admin Login</h2>
-        <h2 className="text-xl font-bold mb-1">Library Admin Login</h2>
-        <p className="text-xs text-slate-500 mb-4">Daily library work — members, seats, shifts.</p>
-
-        {error && (
-          <div className="text-sm mb-3 space-y-2">
-            <p className="text-red-600">{error}</p>
-            {error.includes("Super admins must use") && (
-              <p>
-                <Link to="/super-admin/login" className="text-blue-600 underline font-medium">
-                  Open Super Admin login
-                </Link>
-              </p>
-            )}
-            {errorCode === "PENDING_APPROVAL" && (
-              <p className="text-slate-600">
-                Ask your super admin to open <strong>/super-admin</strong> and approve your library request.
-              </p>
-            )}
-            {(errorCode === "NO_ADMIN" || errorCode === "PENDING_APPROVAL") && (
-              <p>
-                <Link to="/request" className="text-blue-600 underline font-medium">
-                  Submit a library admin request
-                </Link>
-              </p>
-            )}
-          </div>
-        )}
-
-        <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="input"/>
-        <input name="password" value={form.password} onChange={handleChange} type="password" placeholder="Password" className="input"/>
-
-        <button disabled={loading} className="bg-blue-500 text-white px-4 py-2 w-full mt-2">
-          {loading ? "Logging in..." : "Login"}
-        </button>
-
-        <p className="text-center text-xs text-slate-500 mt-4">
-          <Link to="/super-admin/login" className="text-blue-600 underline font-medium">
-            Super Admin login
-          </Link>
-          {" · "}
-          <Link to="/setup-super" className="text-blue-600 underline">
-            First-time super admin setup
-          </Link>
-          {" · "}
-          <Link to="/request" className="text-blue-600 underline">
-            Request library access
-          </Link>
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        {/* Simple Branding / Icon */}
+        <div className="flex justify-center mb-4 text-blue-600">
+          <ShieldCheck size={48} />
+        </div>
+        <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight">
+          Library Admin Login
+        </h2>
+        <p className="mt-2 text-center text-sm text-slate-600">
+          Daily library work — members, seats, shifts.
         </p>
-      </form>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/60 rounded-xl border border-slate-100">
+          <form className="space-y-6" onSubmit={handleLogin}>
+            
+            {/* Error Handling UI */}
+            {error && (
+              <div className="p-4 rounded-lg bg-red-50 border border-red-100 text-sm text-red-700 animate-in fade-in duration-300">
+                <div className="flex items-center mb-2">
+                  <AlertCircle size={18} className="mr-2" />
+                  <span className="font-semibold">{error}</span>
+                </div>
+                
+                <div className="space-y-2 ml-6 text-xs leading-relaxed">
+                  {error.includes("Super admins must use") && (
+                    <Link to="/super-admin/login" className="block text-blue-600 hover:underline font-medium">
+                      → Open Super Admin login
+                    </Link>
+                  )}
+                  {errorCode === "PENDING_APPROVAL" && (
+                    <p className="text-slate-600">
+                      Ask your super admin to approve your request in the <strong>Super Admin</strong> panel.
+                    </p>
+                  )}
+                  {(errorCode === "NO_ADMIN" || errorCode === "PENDING_APPROVAL") && (
+                    <Link to="/request" className="block text-blue-600 hover:underline font-medium">
+                      → Submit a library admin request
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Email Input */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Mail size={18} />
+                </div>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all"
+                  placeholder="admin@library.com"
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Lock size={18} />
+                </div>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  value={form.password}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <button
+              disabled={loading}
+              type="submit"
+              className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 transition-all duration-200"
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin mr-2" size={18} /> Logging in...</>
+              ) : (
+                <><LogIn className="mr-2" size={18} /> Login</>
+              )}
+            </button>
+          </form>
+
+          {/* Footer Links */}
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <div className="grid grid-cols-1 gap-2 text-center text-xs">
+              <Link to="/super-admin/login" className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                Super Admin Portal
+              </Link>
+              <div className="flex justify-center items-center gap-2 text-slate-400">
+                <Link to="/setup-super" className="hover:text-slate-600 transition-colors">Setup</Link>
+                <span>•</span>
+                <Link to="/request" className="hover:text-slate-600 transition-colors">Request Access</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

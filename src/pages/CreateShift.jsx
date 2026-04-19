@@ -17,21 +17,26 @@ const CreateShift = () => {
 
     try {
       const token = localStorage.getItem("token")
-    const res= await axios.post(
-  `${API_URL}/api/shifts/create-shifts`,
-  {
-    name,
-    startTime,
-    endTime,
-  },
-  {
-    headers: {
-      Authorization: `Bearer ${token}`, // ✅ FIXED
-    },
-  }
-);
 
-console.log("res",res)
+      if (!token) {
+        setMessage({ text: "Please login first", type: "error" });
+        return;
+      }
+      const res = await axios.post(
+        `${API_URL}/api/shifts/create-shifts`,
+        {
+          name,
+          startTime,
+          endTime,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ FIXED
+          },
+        }
+      );
+
+      console.log("res", res)
       setMessage({ text: "Shift created successfully!", type: "success" });
       setName("");
       setStartTime("");
@@ -47,28 +52,32 @@ console.log("res",res)
     }
   };
 
-const fetchShifts = async () => {
-  try {
-    const token = localStorage.getItem("token");
+  const fetchShifts = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setMessage({ text: "Please login first", type: "error" });
+        return;
+      }
 
-    const res = await axios.get(`${API_URL}/api/shifts/get-shifts`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      const res = await axios.get(`${API_URL}/api/shifts/get-shifts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    if (res.status === 200) {
-      setShifts(res.data);
+      if (res.status === 200) {
+        setShifts(res.data);
+      }
+
+    } catch (error) {
+      console.error("Error fetching shifts", error.response?.data || error.message);
     }
-
-  } catch (error) {
-    console.error("Error fetching shifts", error);
-  }
-};
-  useEffect(()=>{
+  };
+  useEffect(() => {
     fetchShifts()
 
-  },[])
+  }, [])
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
       <div className="w-full max-w-md">
@@ -138,8 +147,8 @@ const fetchShifts = async () => {
               type="submit"
               disabled={loading}
               className={`w-full py-4 rounded-xl text-white font-bold text-base shadow-lg transition-all active:scale-[0.98] ${loading
-                  ? 'bg-purple-300 cursor-wait'
-                  : 'bg-gradient-to-r from-purple-700 to-purple-600 hover:shadow-purple-200 hover:brightness-110'
+                ? 'bg-purple-300 cursor-wait'
+                : 'bg-gradient-to-r from-purple-700 to-purple-600 hover:shadow-purple-200 hover:brightness-110'
                 }`}
             >
               {loading ? 'Creating...' : 'Create Shift'}
@@ -151,6 +160,18 @@ const fetchShifts = async () => {
         <p className="text-center text-slate-400 text-xs mt-6">
           Shifts created here will be available for selection during member registration.
         </p>
+        <div className="mt-6">
+          <h2 className="text-lg font-bold mb-2">All Shifts</h2>
+
+          {shifts.map((shift) => (
+            <div key={shift._id} className="bg-white p-3 rounded-lg shadow mb-2">
+              <p className="font-semibold">{shift.name}</p>
+              <p className="text-sm text-gray-500">
+                {shift.startTime} - {shift.endTime}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
