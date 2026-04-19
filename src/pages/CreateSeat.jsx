@@ -10,8 +10,8 @@ const CreateSeat = () => {
   const [loading, setLoading] = useState(false);
 
   // ── Edit modal state ──
-  const [editSeat, setEditSeat] = useState(null);       // jo seat edit ho rahi hai
-  const [editPrices, setEditPrices] = useState([]);     // us seat ki current prices
+  const [editSeat, setEditSeat] = useState(null);      
+  const [editPrices, setEditPrices] = useState([]);     
   const [editLoading, setEditLoading] = useState(false);
   const [editMessage, setEditMessage] = useState({ text: '', type: '' });
 
@@ -78,7 +78,6 @@ const CreateSeat = () => {
     }
   };
 
-  // ── Open edit modal — seat card pe click ──
   const openEditModal = (seat) => {
     setEditSeat(seat);
     setEditMessage({ text: '', type: '' });
@@ -121,7 +120,7 @@ const CreateSeat = () => {
       );
       setEditMessage({ text: `Seat #${editSeat.seatNumber} updated!`, type: 'success' });
       fetchSeats();
-      setTimeout(() => setEditSeat(null), 1000); // 1 second baad modal band
+      setEditSeat()
     } catch (error) {
       setEditMessage({ text: error.response?.data?.message || 'Update failed', type: 'error' });
     } finally {

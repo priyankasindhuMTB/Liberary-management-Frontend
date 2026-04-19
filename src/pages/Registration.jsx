@@ -52,13 +52,37 @@ const Registration = ({ closeModal, refreshUsers, editUser }) => {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const occupiedSeatIdsInSelectedSlot = (users || [])
-    .filter(u => u.status === 'Active' &&
-      (u.shiftId?._id === formData.shiftId || u.shiftId === formData.shiftId) &&
-      (editUser ? String(u._id) !== String(editUser._id) : true))
-    .map(u => u.seatId?._id || u.seatId);
+const occupiedSeatIdsInSelectedSlot = (users || [])
+  .filter(u => {
+    // Edit mode mein apne aap ko exclude karo
+    if (editUser && String(u._id) === String(editUser._id)) return false;
 
-  const availableSeats = seats.filter(seat => !occupiedSeatIdsInSelectedSlot.includes(seat._id));
+    // Sirf Active users check karo
+    if (u.status !== "Active") return false;
+
+    const userShiftId = String(u.shiftId?._id || u.shiftId);
+    const selectedShiftId = String(formData.shiftId);
+
+    const userShift = shifts.find(s => String(s._id) === userShiftId);
+    const selectedShift = shifts.find(s => String(s._id) === selectedShiftId);
+
+    if (!userShift || !selectedShift) return false;
+
+    const userShiftName = userShift.name?.toLowerCase().trim();
+    const selectedShiftName = selectedShift.name?.toLowerCase().trim();
+
+    // ✅ Block ONLY if:
+    // 1. Existing booking is Full Day (pura din busy)
+    // 2. New user wants Full Day (needs whole day)
+    // 3. Exact same shift
+    return (
+      userShiftName === "full day" ||
+      selectedShiftName === "full day" ||
+      userShiftId === selectedShiftId
+    );
+  })
+  .map(u => String(u.seatId?._id || u.seatId));
+  const availableSeats = seats.filter(seat => !occupiedSeatIdsInSelectedSlot.includes(String(seat._id)));
   const selectedShift = shifts.find(s => s._id === formData.shiftId);
 
   const handleSubmit = async (e) => {
