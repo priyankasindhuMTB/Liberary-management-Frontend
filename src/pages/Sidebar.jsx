@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   Users, Armchair, Clock, ShieldCheck,
-  LogOut, Library, ChevronRight, Menu, X, MoreHorizontal
+  LogOut, Library, ChevronRight, Menu, X, MoreHorizontal,LayoutGrid 
 } from "lucide-react";
 
 const navItems = [
   { path: "/users",         label: "Members",  icon: Users    },
   { path: "/create-seat",   label: "Seats",    icon: Armchair },
+   { path: "/rooms",         label: "Rooms",   icon: LayoutGrid }, // ← ADD
   { path: "/create-shifts", label: "Shifts",   icon: Clock    },
   { path: "/all-admins",    label: "All-Admin", icon: Users   },
 ];

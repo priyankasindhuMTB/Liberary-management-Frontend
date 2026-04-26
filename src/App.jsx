@@ -12,6 +12,7 @@
   import SetupFirstSuper from './pages/SetupFirstSuper'
   import AdminList from './pages/AdminList';
   import './App.css'
+import CreateRoom from './pages/CreateRoom'
 
   function App() {
     return (
@@ -33,6 +34,7 @@
               <Route path="/create-seat" element={<CreateSeat />} />
               <Route path="/create-shifts" element={<CreateShift />} />
               <Route path="/all-admins" element={<AdminList />} />
+              <Route path="/rooms" element={<CreateRoom />} />
             </Routes>
           </main>
         </div>
