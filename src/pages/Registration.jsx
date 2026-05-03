@@ -3,11 +3,12 @@ import axios from "axios";
 import React from "react";
 
 const Registration = ({ closeModal, refreshUsers, editUser }) => {
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", seatId: "", shiftId: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", seatId: "", shiftId: "",roomId:"" });
   const [seats, setSeats] = useState([]);
   const [users, setUsers] = useState([]);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [shifts, setShifts] = useState([]);
+   const [rooms, setRooms]   = useState([]); 
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
@@ -19,10 +20,25 @@ const Registration = ({ closeModal, refreshUsers, editUser }) => {
         email: editUser.email || "",
         password: "",
         seatId: editUser.seatId?._id || "",
-        shiftId: editUser.shiftId?._id || ""
+        shiftId: editUser.shiftId?._id || "",
+        roomId:editUser.seatId?.roomId?._id || ""
       });
     }
   }, [editUser]);
+
+
+  const fetchRooms = async ()=>{
+    try {
+      const token = localStorage.getItem("token")
+      const res = await axios.get(`${API_URL}/api/rooms/all`,{
+        headers:{Authorization:`Bearer ${token}`}
+      })
+      setRooms((res.data.rooms || []).filter(r=>r.status==="Active"));
+} catch (error) {
+  console.log("eroror",error)
+      
+    }
+  }
 
   const fetchShifts = async () => {
     try {
@@ -48,7 +64,7 @@ const Registration = ({ closeModal, refreshUsers, editUser }) => {
     } catch (error) { console.log("error", error); }
   };
 
-  useEffect(() => { fetchSeats(); fetchUsers(); fetchShifts(); }, []);
+  useEffect(() => { fetchSeats(); fetchUsers(); fetchShifts(); fetchRooms() }, []);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -82,7 +98,16 @@ const occupiedSeatIdsInSelectedSlot = (users || [])
     );
   })
   .map(u => String(u.seatId?._id || u.seatId));
-  const availableSeats = seats.filter(seat => !occupiedSeatIdsInSelectedSlot.includes(String(seat._id)));
+  const availableSeats = seats.filter(seat => {
+    const notConflicted = !occupiedSeatIdsInSelectedSlot.includes(String(seat._id));
+
+    // Room filter — agar room select hai toh usi room ki seats
+    const roomMatch = !formData.roomId ||
+      String(seat.roomId?._id || seat.roomId) === formData.roomId;
+
+    return notConflicted && roomMatch;
+  });
+
   const selectedShift = shifts.find(s => s._id === formData.shiftId);
 
   const handleSubmit = async (e) => {
@@ -113,12 +138,13 @@ const occupiedSeatIdsInSelectedSlot = (users || [])
   };
 
   return (
-    <div className="overflow-hidden rounded-3xl">
+     <div className="overflow-hidden rounded-3xl">
 
-      {/* ── Modal Header with gradient ── */}
-      <div className="px-7 py-6 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1d4ed8, #4f46e5)' }}>
-        <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/10" />
-        <div className="absolute -bottom-6 -left-4 w-20 h-20 rounded-full bg-white/10" />
+      {/* Header */}
+      <div className="px-7 py-6 text-white relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #1d4ed8, #4f46e5)' }}>
+        <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/10"/>
+        <div className="absolute -bottom-6 -left-4 w-20 h-20 rounded-full bg-white/10"/>
         <div className="relative">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
@@ -135,50 +161,69 @@ const occupiedSeatIdsInSelectedSlot = (users || [])
         </div>
       </div>
 
-      {/* ── Status Message ── */}
+      {/* Message */}
       {message.text && (
-        <div className={`px-6 py-3 flex items-center gap-2 text-sm font-semibold ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-black ${message.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+        <div className={`px-6 py-3 flex items-center gap-2 text-sm font-semibold
+          ${message.type === 'success' 
+            ? 'bg-emerald-50 text-emerald-700' 
+            : 'bg-red-50 text-red-600'}`}>
+          <span className={`w-5 h-5 rounded-full flex items-center justify-center
+            text-white text-xs font-black
+            ${message.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
             {message.type === 'success' ? '✓' : '✕'}
           </span>
           {message.text}
         </div>
       )}
 
-      {/* ── Form ── */}
+      {/* Form */}
       <form onSubmit={handleSubmit} className="p-7 space-y-4">
 
         {/* Full Name */}
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Full Name</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+            Full Name
+          </label>
           <input type="text" name="name" placeholder="e.g. Rahul Sharma"
             value={formData.name} onChange={handleChange} required
-            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-300 outline-none focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium"
+            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl
+              text-slate-900 placeholder:text-slate-300 outline-none focus:border-indigo-400
+              focus:bg-white transition-all text-sm font-medium"
           />
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Email Address</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+            Email Address
+          </label>
           <input type="email" name="email" placeholder="rahul@example.com"
             value={formData.email} onChange={handleChange} required
-            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-300 outline-none focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium"
+            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl
+              text-slate-900 placeholder:text-slate-300 outline-none focus:border-indigo-400
+              focus:bg-white transition-all text-sm font-medium"
           />
         </div>
 
         {/* Password */}
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-            Password {editUser && <span className="normal-case font-normal text-slate-400 ml-1">— blank = no change</span>}
+            Password {editUser && 
+              <span className="normal-case font-normal text-slate-400 ml-1">
+                — blank = no change
+              </span>}
           </label>
           <div className="relative">
             <input type={showPass ? "text" : "password"} name="password"
               placeholder={editUser ? "Leave blank to keep current" : "Min. 6 characters"}
               value={formData.password} onChange={handleChange} required={!editUser}
-              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-300 outline-none focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium"
+              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl
+                text-slate-900 placeholder:text-slate-300 outline-none focus:border-indigo-400
+                focus:bg-white transition-all text-sm font-medium"
             />
             <button type="button" onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs px-1">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400
+                hover:text-slate-600 text-xs px-1">
               {showPass ? '🙈' : '👁️'}
             </button>
           </div>
@@ -186,10 +231,14 @@ const occupiedSeatIdsInSelectedSlot = (users || [])
 
         {/* Shift */}
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Shift</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+            Shift
+          </label>
           <div className="relative">
             <select name="shiftId" value={formData.shiftId} onChange={handleChange} required
-              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 outline-none focus:border-indigo-400 focus:bg-white transition-all appearance-none cursor-pointer text-sm font-medium">
+              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl
+                text-slate-900 outline-none focus:border-indigo-400 focus:bg-white
+                transition-all appearance-none cursor-pointer text-sm font-medium">
               <option value="">Select a shift</option>
               {shifts.map(shift => (
                 <option key={shift._id} value={shift._id}>
@@ -197,7 +246,42 @@ const occupiedSeatIdsInSelectedSlot = (users || [])
                 </option>
               ))}
             </select>
-            <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400
+              pointer-events-none" width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* ── Room — shift select hone ke baad dikhao ── */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+            Room
+            <span className="normal-case font-normal text-slate-400 ml-1">— optional</span>
+          </label>
+          <div className="relative">
+            <select
+              name="roomId"
+              value={formData.roomId}
+              onChange={handleChange}
+              disabled={!formData.shiftId}
+              className={`w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl
+                text-slate-900 outline-none focus:border-indigo-400 focus:bg-white
+                transition-all appearance-none text-sm font-medium
+                ${!formData.shiftId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+              <option value="">
+                {formData.shiftId ? 'All Rooms (show all seats)' : 'Select shift first'}
+              </option>
+              {rooms.map(room => (
+                <option key={room._id} value={room._id}>{room.name}</option>
+              ))}
+            </select>
+            <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400
+              pointer-events-none" width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </div>
         </div>
 
@@ -207,26 +291,47 @@ const occupiedSeatIdsInSelectedSlot = (users || [])
             Seat
             {formData.shiftId && (
               <span className="normal-case font-normal text-slate-400 ml-2">
-                — {availableSeats.length} of {seats.length} available{selectedShift ? ` in ${selectedShift.name}` : ''}
+                — {availableSeats.length} available
+                {formData.roomId && rooms.find(r => r._id === formData.roomId)
+                  ? ` in ${rooms.find(r => r._id === formData.roomId)?.name}`
+                  : ' across all rooms'}
+                {selectedShift ? ` for ${selectedShift.name}` : ''}
               </span>
             )}
           </label>
           <div className="relative">
             <select name="seatId" value={formData.seatId} onChange={handleChange} required
               disabled={!formData.shiftId}
-              className={`w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 outline-none focus:border-indigo-400 focus:bg-white transition-all appearance-none text-sm font-medium ${!formData.shiftId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-              <option value="">{formData.shiftId ? (availableSeats.length > 0 ? 'Select a seat' : 'No seats available') : 'Choose a shift first'}</option>
+              className={`w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl
+                text-slate-900 outline-none focus:border-indigo-400 focus:bg-white
+                transition-all appearance-none text-sm font-medium
+                ${!formData.shiftId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+              <option value="">
+                {formData.shiftId
+                  ? availableSeats.length > 0
+                    ? 'Select a seat'
+                    : 'No seats available'
+                  : 'Choose a shift first'}
+              </option>
               {availableSeats.map(seat => (
-                <option key={seat._id} value={seat._id}>Seat #{seat.seatNumber}</option>
+                <option key={seat._id} value={seat._id}>
+                  Seat #{seat.seatNumber}
+                  {seat.roomId?.name ? ` — 🏢 ${seat.roomId.name}` : ' — General'}
+                </option>
               ))}
             </select>
-            <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400
+              pointer-events-none" width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </div>
         </div>
 
         {/* Submit */}
         <button type="submit" disabled={loading}
-          className={`w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all active:scale-[0.98] mt-2
+          className={`w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all
+            active:scale-[0.98] mt-2
             ${loading ? 'opacity-60 cursor-wait' : 'hover:brightness-110 active:scale-95'}`}
           style={{ background: loading ? '#a5b4fc' : 'linear-gradient(135deg, #1d4ed8, #4f46e5)' }}>
           {loading ? "Processing..." : editUser ? "Update Member" : "Register Member"}
@@ -235,5 +340,4 @@ const occupiedSeatIdsInSelectedSlot = (users || [])
     </div>
   );
 };
-
 export default Registration;

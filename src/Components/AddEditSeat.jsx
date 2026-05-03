@@ -22,7 +22,13 @@ const AddEditSeat = ({ seat = null, shifts, rooms, onClose, onSuccess }) => {
   useEffect(() => {
     if (isEdit && seat) {
       setSeatNumber(seat.seatNumber || '');
-      setSelectedRoom(String(seat.roomId?._id || ''));
+
+        const roomIdValue = seat.roomId?._id
+      ? String(seat.roomId._id)
+      : seat.roomId
+        ? String(seat.roomId)
+        : '';
+     setSelectedRoom(roomIdValue);
       const prices = shifts.map(shift => {
         const existing = seat.price?.find(
           p => String(p.shiftId) === String(shift._id)
@@ -115,7 +121,7 @@ const AddEditSeat = ({ seat = null, shifts, rooms, onClose, onSuccess }) => {
             </h2>
             <p className="text-white/60 text-sm mt-0.5">
               {isEdit
-                ? seat.roomId ? `Currently in 🏢 ${seat.roomId?.name}` : 'No room assigned'
+                ? seat.roomId?.name ? `Currently in 🏢 ${seat.roomId?.name}` : 'No room assigned'
                 : 'Configure seat number, room & pricing'}
             </p>
           </div>
