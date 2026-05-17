@@ -17,32 +17,44 @@ const Login = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      setError("");
-      setErrorCode("");
+const handleLogin = async (e) => {
+  e.preventDefault();
+  try {
+    setLoading(true);
+    setError("");
+    setErrorCode("");
 
-      const res = await axios.post(`${API_URL}/api/admin/login`, form);
+    const res = await axios.post(`${API_URL}/api/admin/login`, form);
+    
+    // Check if the response was successful (Status 200)
+    if (res.status === 200 && res.data) {
       const { admin, token } = res.data;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("admin", JSON.stringify(admin));
+      // Safety check: ensure token and admin exist before saving
+      if (token) localStorage.setItem("token", token);
+      if (admin) localStorage.setItem("admin", JSON.stringify(admin));
 
-      if (admin.role === "super_admin") {
+      console.log("Logged in admin role:", admin?.role); // Debug log to see what role is returned
+
+      // Redirect based on role
+      if (admin?.role === "super_admin") {
         navigate("/super-admin");
       } else {
         navigate("/users");
       }
-    } catch (err) {
-      const data = err.response?.data;
-      setError(data?.message || "Login failed");
-      setErrorCode(data?.code || "");
-    } finally {
-      setLoading(false);
+    } else {
+      setError("Unexpected response from server. Please try again.");
     }
-  };
+    
+  } catch (err) {
+    console.error("Login Error details:", err);
+    const data = err.response?.data;
+    setError(data?.message || "Login failed");
+    setErrorCode(data?.code || "");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">

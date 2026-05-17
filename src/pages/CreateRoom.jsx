@@ -6,7 +6,12 @@ const CreateRoom = () => {
   const [rooms, setRooms] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editRoom, setEditRoom] = useState(null);
-  const [loading, setLoading] = useState(false);
+  
+  // ── Loading States ──
+  const [pageLoading, setPageLoading] = useState(true); // Main data fetch loader
+  const [loading, setLoading] = useState(false);        // Form submit loader
+  const [togglingRoomId, setTogglingRoomId] = useState(null); // Individual row switcher toggle
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -28,6 +33,8 @@ const CreateRoom = () => {
       setRooms(res.data.rooms || []);
     } catch (err) {
       console.error(err);
+    } finally {
+      setPageLoading(false); // Drop global page loader down
     }
   };
 
@@ -80,7 +87,7 @@ const CreateRoom = () => {
       } else {
         await axios.post(`${API_URL}/api/rooms/create`, formData, { headers: authHeaders() });
       }
-      fetchRooms();
+      await fetchRooms();
       setShowModal(false);
     } catch (err) {
       setMessage({ text: err.response?.data?.message || "Something went wrong", type: "error" });
@@ -90,19 +97,35 @@ const CreateRoom = () => {
   };
 
   const toggleStatus = async (room) => {
+    if (togglingRoomId) return; // Prevent clicking multiple toggles simultaneously
     const newStatus = room.status === "Active" ? "Inactive" : "Active";
     try {
+      setTogglingRoomId(room._id); // Mark row as active loading target
       await axios.put(`${API_URL}/api/rooms/status/${room._id}`,
         { status: newStatus },
         { headers: authHeaders() }
       );
-      fetchRooms();
-    } catch (err) { console.error(err); }
+      await fetchRooms();
+    } catch (err) { 
+      console.error(err); 
+    } finally {
+      setTogglingRoomId(null); // Release row lock
+    }
   };
 
   // Stats
   const activeRooms = rooms.filter(r => r.status === "Active").length;
   const totalSeats  = rooms.reduce((acc, r) => acc + (r.seatCount || 0), 0);
+
+  // ── Global Full Screen Loader ──
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-500 font-bold text-sm tracking-wide">Syncing library rooms...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-8 font-sans" style={{ background: "#f0f2f5" }}>
@@ -115,7 +138,8 @@ const CreateRoom = () => {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white
+          disabled={togglingRoomId !== null}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white
             font-bold px-5 py-3 rounded-2xl shadow-lg shadow-indigo-200 transition-all
             active:scale-95 text-sm"
         >
@@ -126,9 +150,9 @@ const CreateRoom = () => {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {[
-          { label: "Total Rooms",   value: rooms.length,  sub: "configured",      color: "#4285f4", icon: "🏢" },
-          { label: "Active Rooms",  value: activeRooms,   sub: "currently open",  color: "#34a853", icon: "✅" },
-          { label: "Total Seats",   value: totalSeats,    sub: "across all rooms", color: "#9b51e0", icon: "💺" },
+          { label: "Total Rooms",   value: rooms.length,   sub: "configured",      color: "#4285f4", icon: "🏢" },
+          { label: "Active Rooms",  value: activeRooms,    sub: "currently open",  color: "#34a853", icon: "✅" },
+          { label: "Total Seats",   value: totalSeats,     sub: "across all rooms", color: "#9b51e0", icon: "💺" },
         ].map(card => (
           <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-white relative overflow-hidden">
             <div className="absolute top-4 right-4 text-2xl opacity-20">{card.icon}</div>
@@ -154,70 +178,80 @@ const CreateRoom = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rooms.map(room => (
-            <div key={room._id}
-              className={`bg-white rounded-2xl p-5 shadow-sm border transition-all
-                ${room.status === "Inactive" ? "opacity-60 border-slate-100" : "border-white hover:shadow-md"}`}>
+          {rooms.map(room => {
+            const isRoomToggling = togglingRoomId === room._id;
+            return (
+              <div key={room._id}
+                className={`bg-white rounded-2xl p-5 shadow-sm border transition-all
+                  ${room.status === "Inactive" ? "opacity-60 border-slate-100" : "border-white hover:shadow-md"}`}>
 
-              {/* Card Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg
-                    ${room.status === "Active" ? "bg-indigo-50" : "bg-slate-100"}`}>
-                    🏢
+                {/* Card Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg
+                      ${room.status === "Active" ? "bg-indigo-50" : "bg-slate-100"}`}>
+                      🏢
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-sm">{room.name}</h3>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
+                        ${room.status === "Active"
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-red-50 text-red-500"}`}>
+                        ● {room.status}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-black text-slate-800 text-sm">{room.name}</h3>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
-                      ${room.status === "Active"
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "bg-red-50 text-red-500"}`}>
-                      ● {room.status}
-                    </span>
-                  </div>
+
+                  {/* Toggle Switch Button */}
+                  <button onClick={() => toggleStatus(room)}
+                    disabled={togglingRoomId !== null}
+                    className={`relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0
+                      ${isRoomToggling ? 'opacity-50 cursor-wait' : ''}
+                      ${room.status === "Active" ? "bg-emerald-500" : "bg-slate-200"}`}>
+                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow
+                      transition-all duration-300 flex items-center justify-center ${room.status === "Active" ? "translate-x-5" : ""}`}>
+                      {isRoomToggling && (
+                        <div className="w-2 h-2 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                    </div>
+                  </button>
                 </div>
 
-                {/* Toggle */}
-                <button onClick={() => toggleStatus(room)}
-                  className={`relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0
-                    ${room.status === "Active" ? "bg-emerald-500" : "bg-slate-200"}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow
-                    transition-all duration-300 ${room.status === "Active" ? "translate-x-5" : ""}`} />
+                {/* Description */}
+                {room.description && (
+                  <p className="text-slate-400 text-xs mb-3 line-clamp-2">{room.description}</p>
+                )}
+
+                {/* Seat Count */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="bg-indigo-50 text-indigo-600 font-black text-xs px-2.5 py-1 rounded-lg">
+                    💺 {room.seatCount || 0} Seats
+                  </span>
+                </div>
+
+                {/* Amenities */}
+                {room.amenities?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {room.amenities.map(a => (
+                      <span key={a}
+                        className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Edit Button */}
+                <button onClick={() => openEdit(room)}
+                  disabled={togglingRoomId !== null}
+                  className="w-full bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 font-bold
+                    py-2 rounded-xl text-xs transition active:scale-95">
+                  Edit Room
                 </button>
               </div>
-
-              {/* Description */}
-              {room.description && (
-                <p className="text-slate-400 text-xs mb-3 line-clamp-2">{room.description}</p>
-              )}
-
-              {/* Seat Count */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="bg-indigo-50 text-indigo-600 font-black text-xs px-2.5 py-1 rounded-lg">
-                  💺 {room.seatCount || 0} Seats
-                </span>
-              </div>
-
-              {/* Amenities */}
-              {room.amenities?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {room.amenities.map(a => (
-                    <span key={a}
-                      className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                      {a}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Edit Button */}
-              <button onClick={() => openEdit(room)}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold
-                  py-2 rounded-xl text-xs transition active:scale-95">
-                Edit Room
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -244,8 +278,9 @@ const CreateRoom = () => {
                 </p>
               </div>
               <button onClick={() => setShowModal(false)}
+                disabled={loading}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center
-                  bg-white/20 hover:bg-white/30 rounded-full text-white text-sm transition">
+                  bg-white/20 hover:bg-white/30 rounded-full text-white text-sm transition disabled:opacity-50">
                 ✕
               </button>
             </div>
@@ -270,12 +305,13 @@ const CreateRoom = () => {
                 <input
                   type="text"
                   value={formData.name}
+                  disabled={loading}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Room A, AC Hall, Ground Floor"
                   required
                   className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200
                     rounded-xl text-slate-900 placeholder:text-slate-300 outline-none
-                    focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium"
+                    focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium disabled:opacity-60"
                 />
               </div>
 
@@ -287,13 +323,14 @@ const CreateRoom = () => {
                 </label>
                 <textarea
                   value={formData.description}
+                  disabled={loading}
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
                   placeholder="e.g. Quiet zone with AC, suitable for competitive exams"
                   rows={2}
                   className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200
                     rounded-xl text-slate-900 placeholder:text-slate-300 outline-none
                     focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium
-                    resize-none"
+                    resize-none disabled:opacity-60"
                 />
               </div>
 
@@ -306,9 +343,10 @@ const CreateRoom = () => {
                     <button
                       key={a}
                       type="button"
+                      disabled={loading}
                       onClick={() => toggleAmenity(a)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all
-                        active:scale-95 border-2
+                        active:scale-95 border-2 disabled:opacity-50
                         ${formData.amenities.includes(a)
                           ? "bg-indigo-600 text-white border-indigo-600"
                           : "bg-slate-50 text-slate-500 border-slate-200 hover:border-indigo-300"}`}
@@ -323,18 +361,21 @@ const CreateRoom = () => {
                   <input
                     type="text"
                     value={amenityInput}
+                    disabled={loading}
                     onChange={e => setAmenityInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomAmenity())}
                     placeholder="Add custom amenity..."
                     className="flex-1 px-4 py-2.5 bg-slate-50 border-2 border-slate-200
                       rounded-xl text-slate-900 placeholder:text-slate-300 outline-none
-                      focus:border-indigo-400 transition-all text-sm font-medium"
+                      focus:border-indigo-400 transition-all text-sm font-medium disabled:opacity-60"
                   />
                   <button
                     type="button"
+                    disabled={loading}
                     onClick={addCustomAmenity}
-                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white
-                      rounded-xl text-sm font-bold transition active:scale-95">
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white
+                      rounded-xl text-sm font-bold transition active:scale-95"
+                  >
                     + Add
                   </button>
                 </div>
@@ -349,8 +390,10 @@ const CreateRoom = () => {
                         {a}
                         <button
                           type="button"
+                          disabled={loading}
                           onClick={() => toggleAmenity(a)}
-                          className="text-indigo-400 hover:text-red-500 font-black ml-0.5">
+                          className="text-indigo-400 hover:text-red-500 font-black ml-0.5 disabled:opacity-30"
+                        >
                           ×
                         </button>
                       </span>
@@ -359,24 +402,29 @@ const CreateRoom = () => {
                 )}
               </div>
 
-              {/* Submit */}
+              {/* Submit / Action Options */}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
+                  disabled={loading}
                   className="py-3 rounded-xl font-bold text-slate-500 bg-slate-100
-                    hover:bg-slate-200 transition text-sm">
+                    hover:bg-slate-200 transition text-sm disabled:opacity-50"
+                >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !formData.name.trim()}
                   className={`py-3 rounded-xl font-bold text-white text-sm transition
-                    active:scale-[0.98]
-                    ${loading
-                      ? "opacity-60 cursor-wait bg-indigo-400"
+                    active:scale-[0.98] flex items-center justify-center gap-2
+                    ${loading || !formData.name.trim()
+                      ? "opacity-60 cursor-not-allowed bg-indigo-400 shadow-none"
                       : "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200"}`}
                 >
+                  {loading && (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  )}
                   {loading ? "Saving..." : editRoom ? "Update Room" : "Create Room"}
                 </button>
               </div>

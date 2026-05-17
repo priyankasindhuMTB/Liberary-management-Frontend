@@ -7,7 +7,11 @@ const CreateShift = () => {
   const [endTime, setEndTime]     = useState("");
   const [shifts, setShifts]       = useState([]);
   const [message, setMessage]     = useState({ text: "", type: "" });
-  const [loading, setLoading]     = useState(false);
+  
+  // ── Loading States ──
+  const [pageLoading, setPageLoading] = useState(true); // Initial data load state
+  const [loading, setLoading]         = useState(false);     // Form submitting state
+  
   const [editShift, setEditShift] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -26,6 +30,8 @@ const CreateShift = () => {
       if (res.status === 200) setShifts(res.data);
     } catch (err) {
       console.error("Error fetching shifts", err);
+    } finally {
+      setPageLoading(false); // Disable global initial loader
     }
   };
 
@@ -110,6 +116,16 @@ const CreateShift = () => {
     { bg: "#e8f5ec", accent: "#34a853", dot: "#34a853" },
     { bg: "#fee8e8", accent: "#ea4335", dot: "#ea4335" },
   ];
+
+  // ── Global Full Screen Loader ──
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-500 font-bold text-sm tracking-wide">Syncing library shifts...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-8 font-sans" style={{ background: "#f0f2f5" }}>
@@ -272,14 +288,17 @@ const CreateShift = () => {
                     : "Define a new library time slot"}
                 </p>
               </div>
-              <button onClick={() => { setShowModal(false); resetForm(); }}
+              <button 
+                onClick={() => { if (!loading) { setShowModal(false); resetForm(); } }}
+                disabled={loading}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center
-                  bg-white/20 hover:bg-white/30 rounded-full text-white transition text-sm">
+                  bg-white/20 hover:bg-white/30 rounded-full text-white transition text-sm disabled:opacity-50"
+              >
                 ✕
               </button>
             </div>
 
-            {/* Message */}
+            {/* Message Alert */}
             {message.text && (
               <div className={`px-6 py-3 flex items-center gap-2 text-sm font-semibold
                 ${message.type === "success"
@@ -305,11 +324,12 @@ const CreateShift = () => {
                   type="text"
                   placeholder="e.g. Morning, Evening, Full Day"
                   value={name}
+                  disabled={loading}
                   onChange={e => setName(e.target.value)}
                   required
                   className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200
                     rounded-xl text-slate-900 placeholder:text-slate-300 outline-none
-                    focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium"
+                    focus:border-indigo-400 focus:bg-white transition-all text-sm font-medium disabled:opacity-60"
                 />
               </div>
 
@@ -321,11 +341,12 @@ const CreateShift = () => {
                   <input
                     type="time"
                     value={startTime}
+                    disabled={loading}
                     onChange={e => setStartTime(e.target.value)}
                     required
                     className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200
                       rounded-xl text-slate-900 outline-none focus:border-indigo-400
-                      focus:bg-white transition-all text-sm font-medium"
+                      focus:bg-white transition-all text-sm font-medium disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -334,11 +355,12 @@ const CreateShift = () => {
                   <input
                     type="time"
                     value={endTime}
+                    disabled={loading}
                     onChange={e => setEndTime(e.target.value)}
                     required
                     className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200
                       rounded-xl text-slate-900 outline-none focus:border-indigo-400
-                      focus:bg-white transition-all text-sm font-medium"
+                      focus:bg-white transition-all text-sm font-medium disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -362,24 +384,30 @@ const CreateShift = () => {
                 </div>
               )}
 
-              {/* Buttons */}
+              {/* Action Operations */}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   type="button"
+                  disabled={loading}
                   onClick={() => { setShowModal(false); resetForm(); }}
                   className="py-3 rounded-xl font-bold text-slate-500 bg-slate-100
-                    hover:bg-slate-200 transition text-sm">
+                    hover:bg-slate-200 transition text-sm disabled:opacity-50"
+                >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
                   className={`py-3 rounded-xl font-bold text-white text-sm transition
-                    active:scale-[0.98]
+                    active:scale-[0.98] flex items-center justify-center gap-2
                     ${loading
-                      ? "opacity-60 cursor-wait bg-indigo-400"
-                      : "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200"}`}>
-                  {loading
+                      ? "opacity-60 cursor-not-allowed bg-indigo-400 shadow-none"
+                      : "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200"}`}
+                >
+                  {loading && (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  {loading 
                     ? (editShift ? "Saving..." : "Creating...")
                     : (editShift ? "Save Changes" : "Create Shift")}
                 </button>

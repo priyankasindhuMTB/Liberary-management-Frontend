@@ -12,6 +12,11 @@ export default function UserList() {
     const [filter, setFilter] = useState("All");
     const [search, setSearch] = useState("");
     const API_URL = import.meta.env.VITE_API_URL;
+    
+    // ── Loading States ──
+    const [loading, setLoading] = useState(true); // Main data fetch
+    const [isSubmitting, setIsSubmitting] = useState(false); // Pay Button modal
+    const [togglingUserId, setTogglingUserId] = useState(null); // Row-specific status switch toggle
 
     const authHeaders = () => {
         const token = localStorage.getItem("token");
@@ -38,31 +43,47 @@ export default function UserList() {
         } catch (error) {
             console.error("Error fetching users:", error);
             setUsers([]);
+        } finally {
+            setLoading(false); // Turning off loading screen
         }
     };
 
     const handlePayment = async () => {
         if (!amount || amount <= 0) return;
         try {
+            setIsSubmitting(true); // Start modal loading animation
             await axios.post(`${API_URL}/api/payment/pay`,
                 { userId: selectedUser._id, seatId: selectedUser.seatId?._id, amount: Number(amount) },
                 { headers: authHeaders() }
             );
-            setAmount(""); setSelectedUser(null); fetchUsers();
-        } catch (error) { console.error(error); }
+            setAmount(""); 
+            setSelectedUser(null); 
+            await fetchUsers();
+        } catch (error) { 
+            console.error(error); 
+        } finally {
+            setIsSubmitting(false); // Stop modal loading animation
+        }
     };
 
     const toggleStatus = async (user) => {
         try {
+            setTogglingUserId(user._id); // Sets row-specific toggle to loading state
             await axios.put(`${API_URL}/api/users/status/${user._id}`,
                 { status: user.status === "Active" ? "Inactive" : "Active" },
                 { headers: authHeaders() }
             );
-            fetchUsers();
-        } catch (error) { console.error(error); }
+            await fetchUsers();
+        } catch (error) { 
+            console.error(error); 
+        } finally {
+            setTogglingUserId(null); // Clear row-specific loading state
+        }
     };
 
-    useEffect(() => { fetchUsers(); }, []);
+    useEffect(() => { 
+        fetchUsers(); 
+    }, []);
 
     const stats = Object.values(payments).reduce((acc, curr) => ({
         revenue: acc.revenue + (curr?.totalPaid || 0),
@@ -78,9 +99,18 @@ export default function UserList() {
         return matchStatus && matchSearch;
     });
 
-    // Avatar color based on first letter
     const avatarColors = ['#4285f4','#34a853','#ea4335','#9b51e0','#f2994a','#0f9d58'];
     const getAvatarColor = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
+
+    // ── Global Full Screen Loader ──
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-slate-500 font-bold text-sm tracking-wide">Syncing member records...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen p-4 md:p-8 font-sans" style={{ background: '#f0f2f5' }}>
@@ -102,10 +132,10 @@ export default function UserList() {
             {/* ── Stat Cards ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
-                    { label: 'Total Members', value: users.length, sub: `${users.filter(u => u?.status === 'Active').length} active`, color: '#4285f4', bg: '#eef3fe', icon: '👥' },
-                    { label: 'Active', value: users.filter(u => u?.status === 'Active').length, sub: 'currently enrolled', color: '#34a853', bg: '#e8f5ec', icon: '✅' },
-                    { label: 'Revenue', value: `₹${stats.revenue}`, sub: 'total collected', color: '#9b51e0', bg: '#f3eefe', icon: '💰' },
-                    { label: 'Pending', value: `₹${stats.pending}`, sub: 'to be collected', color: '#f2994a', bg: '#fef3e8', icon: '⏳' },
+                    { label: 'Total Members', value: users.length, sub: `${users.filter(u => u?.status === 'Active').length} active`, color: '#4285f4', icon: '👥' },
+                    { label: 'Active', value: users.filter(u => u?.status === 'Active').length, sub: 'currently enrolled', color: '#34a853', icon: '✅' },
+                    { label: 'Revenue', value: `₹${stats.revenue}`, sub: 'total collected', color: '#9b51e0', icon: '💰' },
+                    { label: 'Pending', value: `₹${stats.pending}`, sub: 'to be collected', color: '#f2994a', icon: '⏳' },
                 ].map((card) => (
                     <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-white relative overflow-hidden">
                         <div className="absolute top-4 right-4 text-2xl opacity-20">{card.icon}</div>
@@ -157,11 +187,13 @@ export default function UserList() {
                                         <div className="text-4xl mb-3">👤</div>
                                         No members found
                                     </td>
-                                </tr>
+                                        </tr>
                             ) : filteredUsers.map((user) => {
                                 if (!user?._id) return null;
                                 const avatarColor = getAvatarColor(user.name);
                                 const pendingAmt = payments[user._id]?.pending || 0;
+                                const isRowToggling = togglingUserId === user._id;
+
                                 return (
                                     <tr key={user._id} className="border-b border-slate-50 hover:bg-slate-50/70 transition-colors">
 
@@ -198,9 +230,18 @@ export default function UserList() {
                                                     <span className={`w-1.5 h-1.5 rounded-full ${user.status === "Active" ? "bg-emerald-500" : "bg-red-400"}`}></span>
                                                     {user.status}
                                                 </span>
-                                                <button onClick={() => toggleStatus(user)}
-                                                    className={`relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0 ${user.status === "Active" ? "bg-emerald-500" : "bg-slate-200"}`}>
-                                                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${user.status === "Active" ? "translate-x-5" : ""}`}></div>
+                                                <button 
+                                                    onClick={() => toggleStatus(user)}
+                                                    disabled={togglingUserId !== null}
+                                                    className={`relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0 ${
+                                                        isRowToggling ? 'opacity-50 cursor-wait' : ''
+                                                    } ${user.status === "Active" ? "bg-emerald-500" : "bg-slate-200"}`}
+                                                >
+                                                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${user.status === "Active" ? "translate-x-5" : ""}`}>
+                                                        {isRowToggling && (
+                                                            <div className="w-2 h-2 mx-auto mt-1 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        )}
+                                                    </div>
                                                 </button>
                                             </div>
                                         </td>
@@ -217,12 +258,18 @@ export default function UserList() {
                                         {/* Actions */}
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => setSelectedUser(user)}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm shadow-indigo-200 transition active:scale-95">
+                                                <button 
+                                                    onClick={() => setSelectedUser(user)}
+                                                    disabled={togglingUserId !== null}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm shadow-indigo-200 transition active:scale-95"
+                                                >
                                                     + Pay
                                                 </button>
-                                                <button onClick={() => { setEditUser(user); setShowModal(true); }}
-                                                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3.5 py-1.5 rounded-lg text-xs font-bold transition active:scale-95">
+                                                <button 
+                                                    onClick={() => { setEditUser(user); setShowModal(true); }}
+                                                    disabled={togglingUserId !== null}
+                                                    className="bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 px-3.5 py-1.5 rounded-lg text-xs font-bold transition active:scale-95"
+                                                >
                                                     Edit
                                                 </button>
                                             </div>
@@ -264,19 +311,38 @@ export default function UserList() {
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Amount to Pay</label>
                             <div className="relative mb-5">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">₹</span>
-                                <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl outline-none text-2xl font-black transition-all"
-                                    placeholder="0" autoFocus />
+                                <input 
+                                    type="number" value={amount} onChange={e => setAmount(e.target.value)}
+                                    disabled={isSubmitting}
+                                    className="w-full pl-10 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl outline-none text-2xl font-black transition-all disabled:opacity-60"
+                                    placeholder="0" autoFocus 
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => { setSelectedUser(null); setAmount(""); }}
-                                    className="py-3 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition text-sm">
+                                <button 
+                                    onClick={() => { setSelectedUser(null); setAmount(""); }}
+                                    disabled={isSubmitting}
+                                    className="py-3 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition text-sm disabled:opacity-50"
+                                >
                                     Cancel
                                 </button>
-                                <button onClick={handlePayment}
-                                    disabled={Number(amount) <= 0}
-                                    className={`py-3 rounded-xl font-bold text-white text-sm transition active:scale-95 ${Number(amount) > 0 ? 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200' : 'bg-slate-300 cursor-not-allowed'}`}>
-                                    Record Payment
+                                <button 
+                                    onClick={handlePayment}
+                                    disabled={Number(amount) <= 0 || isSubmitting}
+                                    className={`py-3 rounded-xl font-bold text-white text-sm transition active:scale-95 flex items-center justify-center gap-2 ${
+                                        Number(amount) > 0 && !isSubmitting 
+                                        ? 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200' 
+                                        : 'bg-slate-300 cursor-not-allowed'
+                                    }`}
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        'Record Payment'
+                                    )}
                                 </button>
                             </div>
                         </div>

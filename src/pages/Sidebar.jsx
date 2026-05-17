@@ -10,7 +10,7 @@ const navItems = [
   { path: "/create-seat",   label: "Seats",    icon: Armchair },
    { path: "/rooms",         label: "Rooms",   icon: LayoutGrid }, // ← ADD
   { path: "/create-shifts", label: "Shifts",   icon: Clock    },
-  { path: "/all-admins",    label: "All-Admin", icon: Users   },
+  // { path: "/all-admins",    label: "All-Admin", icon: Users   },
 ];
 
 const Sidebar = () => {

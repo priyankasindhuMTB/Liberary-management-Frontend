@@ -9,6 +9,9 @@ const CreateSeat = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editSeat, setEditSeat]     = useState(null);
 
+  // ── Loading States ──
+  const [loading, setLoading] = useState(true);
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   const authHeaders = () => {
@@ -37,12 +40,35 @@ const CreateSeat = () => {
     } catch (err) { console.error(err); }
   };
 
-  // ✅ Single useEffect
+  // Combined fetch tracker to manage initial loading view
+  const initializeData = async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        fetchSeats(),
+        fetchShifts(),
+        fetchRooms()
+      ]);
+    } catch (err) {
+      console.error("Initialization failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchSeats();
-    fetchShifts();
-    fetchRooms();
+    initializeData();
   }, []);
+
+  // ── Global Full Screen Loader ──
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-500 font-bold text-sm tracking-wide">Loading seat configurations...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-100 min-h-screen p-4 md:p-6">
@@ -174,7 +200,7 @@ const CreateSeat = () => {
                       {shiftCount}s
                     </span>
 
-                    {/* Room naam */}
+                    {/* Room Layout Field */}
                     {seat.roomId && (
                       <span className="text-[9px] font-bold text-indigo-400
                         truncate w-full text-center px-1 leading-tight">
@@ -196,13 +222,13 @@ const CreateSeat = () => {
           rooms={rooms}
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
-            fetchSeats();
+            initializeData(); // Reloads with the loading updates wrapper cleanly
             setShowAddModal(false);
           }}
         />
       )}
 
-      {/* ── Edit Modal — seat prop pass hoga toh edit mode ── */}
+      {/* ── Edit Modal ── */}
       {editSeat && (
         <AddEditSeat
           seat={editSeat}
@@ -210,7 +236,7 @@ const CreateSeat = () => {
           rooms={rooms}
           onClose={() => setEditSeat(null)}
           onSuccess={() => {
-            fetchSeats();
+            initializeData(); // Reloads with the loading updates wrapper cleanly
             setEditSeat(null);
           }}
         />
