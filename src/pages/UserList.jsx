@@ -113,10 +113,10 @@ export default function UserList() {
     }
 
     return (
-        <div className="min-h-screen p-4 md:p-8 font-sans" style={{ background: '#f0f2f5' }}>
+        <div className="min-h-screen p-4 md:p-8 font-sans " style={{ background: '#f0f2f5' }}>
 
             {/* ── Page Header ── */}
-            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-3xl">
                 <div>
                     <h1 className="text-3xl font-black text-slate-900">Members</h1>
                     <p className="text-slate-400 text-sm mt-1">{users.length} registered members</p>
@@ -137,7 +137,7 @@ export default function UserList() {
                     { label: 'Revenue', value: `₹${stats.revenue}`, sub: 'total collected', color: '#9b51e0', icon: '💰' },
                     { label: 'Pending', value: `₹${stats.pending}`, sub: 'to be collected', color: '#f2994a', icon: '⏳' },
                 ].map((card) => (
-                    <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-white relative overflow-hidden">
+                    <div key={card.label} className="bg-white rounded-3xl p-5 shadow-sm border border-white relative overflow-hidden">
                         <div className="absolute top-4 right-4 text-2xl opacity-20">{card.icon}</div>
                         <p className="text-[11px] font-bold uppercase tracking-widest mb-2" style={{ color: card.color }}>{card.label}</p>
                         <p className="text-2xl font-black text-slate-900 mb-1">{card.value}</p>

@@ -1,16 +1,272 @@
+
+
+
+// import React, { useEffect, useMemo, useState } from "react";
+// import axios from "axios";
+// import { useNavigate } from "react-router-dom";
+// import { 
+//   CheckCircle, 
+//   AlertTriangle, 
+//   Loader2, 
+//   ExternalLink,
+//   ShieldCheck,
+//   RefreshCw,
+//   LogOut,
+//   Building,
+//   Clock,
+//   MessageSquare
+// } from "lucide-react";
+
+// function readAdminRole() {
+//   try {
+//     const raw = localStorage.getItem("admin");
+//     if (!raw) return null;
+//     return JSON.parse(raw).role ?? null;
+//   } catch { return null; }
+// }
+
+// const SuperAdmin = () => {
+//   const API_URL = import.meta.env.VITE_API_URL;
+//   const token = localStorage.getItem("token");
+//   const navigate = useNavigate();
+
+//   const [admins, setAdmins] = useState([]); 
+//   const [loading, setLoading] = useState(true);
+//   const [actionLoading, setActionLoading] = useState(null); 
+//   const [approveError, setApproveError] = useState("");
+//   const [remarks, setRemarks] = useState({}); // Stores inline text values for super admin remarks mapped by ID
+
+//   const adminProfile = useMemo(() => {
+//     try { return JSON.parse(localStorage.getItem("admin")) || {}; } catch { return {}; }
+//   }, []);
+
+//   const fetchAllRequests = async () => {
+//     try {
+//       setLoading(true);
+//       // Fetches documents directly matching status: "Pending" based on router path controls
+//       const res = await axios.get(`${API_URL}/api/admin-request`, {
+//         headers: { Authorization: `Bearer ${token}` }
+//       });
+//       setAdmins(res.data);
+//     } catch (err) {
+//       console.error("Fetch Error:", err.response?.data || err.message);
+//     } crystalline: {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => { 
+//     if (readAdminRole() !== "super_admin") {
+//       navigate("/super-admin/login");
+//       return;
+//     }
+//     fetchAllRequests(); 
+//   }, []);
+
+//   const handleLogout = () => {
+//     localStorage.removeItem("token");
+//     localStorage.removeItem("admin");
+//     navigate("/super-admin/login");
+//   };
+
+//   const handleApprove = async (id) => {
+//     setApproveError("");
+//     setActionLoading(id);
+//     try {
+//       await axios.put(
+//         `${API_URL}/api/admin-request/approve/${id}`,
+//         { superAdminRemarks: remarks[id] || "Approved by Administration" },
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+//       await fetchAllRequests();
+//     } catch (err) {
+//       setApproveError(err.response?.data?.message || err.message);
+//     } finally {
+//       setActionLoading(null);
+//     }
+//   };
+
+//   const handleRemarksChange = (id, val) => {
+//     setRemarks(prev => ({ ...prev, [id]: val }));
+//   };
+
+//   if (loading && admins.length === 0) {
+//     return (
+//       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
+//         <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
+//         <p className="text-slate-400 font-bold text-sm tracking-wide">Loading System Directory...</p>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-slate-900 text-slate-100 antialiased font-sans pb-12">
+      
+//       {/* Navigation Header */}
+//       <header className="bg-slate-800/60 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-50">
+//         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+//           <div className="flex items-center gap-3">
+//             <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+//               <Building className="text-white" size={18} />
+//             </div>
+//             <span className="font-black text-lg text-white">
+//               Lib<span className="text-indigo-400">Sync Central</span>
+//             </span>
+//             <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider hidden sm:inline-block">
+//               Super Admin Control Center
+//             </span>
+//           </div>
+
+//           <div className="flex items-center gap-4">
+//             <div className="text-right hidden sm:block">
+//               <p className="text-xs font-bold text-white leading-none mb-0.5">{adminProfile.name || "Root Admin"}</p>
+//               <p className="text-[10px] text-slate-400 font-medium">System Director</p>
+//             </div>
+//             <button 
+//               onClick={handleLogout}
+//               className="flex items-center gap-2 bg-slate-700 hover:bg-red-500/20 hover:text-red-400 text-slate-300 font-bold px-4 py-2 rounded-xl text-xs transition-all border border-slate-600"
+//             >
+//               <LogOut size={14} /> Sign Out
+//             </button>
+//           </div>
+//         </div>
+//       </header>
+
+//       <div className="max-w-5xl mx-auto px-4 mt-8">
+        
+//         {/* Main Title Actions */}
+//         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+//           <div>
+//             <h1 className="text-3xl font-black text-white tracking-tight">Access & Subscription Enquiries</h1>
+//             <p className="text-slate-400 text-sm mt-1">Review operational durations and timeline parameters for branch registers.</p>
+//           </div>
+//           <button 
+//             onClick={fetchAllRequests} 
+//             disabled={loading}
+//             className="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-white bg-slate-800 px-4 py-2.5 rounded-xl border border-slate-700 shadow-sm transition-all disabled:opacity-50"
+//           >
+//             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh Requests List
+//           </button>
+//         </div>
+
+//         {/* Primary Container Stacks */}
+//         <div className="space-y-4">
+//           <h2 className="text-sm font-black text-slate-400 uppercase tracking-wider px-1">
+//             Pending Queue ({admins.length})
+//           </h2>
+          
+//           {admins.length === 0 ? (
+//             <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-16 text-center shadow-inner">
+//               <CheckCircle className="mx-auto mb-4 text-slate-600" size={44} />
+//               <p className="font-bold text-lg text-slate-300">Queue Cleared</p>
+//               <p className="text-sm text-slate-500 mt-1">There are no administrative subscription request parameters awaiting action.</p>
+//             </div>
+//           ) : (
+//             <div className="space-y-4">
+//               {admins.map((reqItem) => {
+//                 const isRowProcessing = actionLoading === reqItem._id;
+                
+//                 return (
+//                   <div key={reqItem._id} className="bg-slate-800/40 border border-slate-700/40 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:border-slate-600/60 transition-all duration-200">
+                    
+//                     {/* User profile parameters block */}
+//                     <div className="flex gap-4 items-start flex-1">
+//                       <div className="h-12 w-12 bg-slate-700 text-indigo-400 rounded-xl flex items-center justify-center font-black text-lg uppercase border border-slate-600 shadow-inner shrink-0 mt-1">
+//                         {reqItem.name?.charAt(0) || "A"}
+//                       </div>
+//                       <div className="space-y-2 w-full">
+//                         <div className="flex items-center gap-2 flex-wrap">
+//                           <h3 className="font-bold text-white text-base">{reqItem.name}</h3>
+//                           <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-md ${
+//                             reqItem.requestType === "Extension" 
+//                               ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" 
+//                               : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+//                           }`}>
+//                             {reqItem.requestType || "New_Registration"}
+//                           </span>
+//                         </div>
+//                         <p className="text-sm text-slate-400 font-medium">{reqItem.email}</p>
+                        
+//                         {/* Branch info matrix tags */}
+//                         <div className="flex items-center gap-3 flex-wrap pt-1">
+//                           {reqItem.libraryName && (
+//                             <div className="flex items-center gap-1.5 text-[11px] text-indigo-400 font-bold bg-indigo-500/5 px-2.5 py-1 rounded-lg border border-indigo-500/10">
+//                               <ExternalLink size={12} />
+//                               {reqItem.libraryName} Branch
+//                             </div>
+//                           )}
+//                           <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-bold bg-amber-500/5 px-2.5 py-1 rounded-lg border border-amber-500/10">
+//                             <Clock size={12} />
+//                             Duration: {reqItem.requestedDurationMonths || 1} Month(s)
+//                           </div>
+//                         </div>
+
+//                         {/* Inline custom super admin remarks wrapper box */}
+//                         <div className="mt-3 max-w-sm relative">
+//                           <div className="absolute top-3 left-3 text-slate-500">
+//                             <MessageSquare size={14} />
+//                           </div>
+//                           <input
+//                             type="text"
+//                             placeholder="Add approval comments/remarks..."
+//                             value={remarks[reqItem._id] || ""}
+//                             onChange={(e) => handleRemarksChange(reqItem._id, e.target.value)}
+//                             disabled={isRowProcessing}
+//                             className="w-full bg-slate-900/40 border border-slate-700/60 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-all"
+//                           />
+//                         </div>
+//                       </div>
+//                     </div>
+
+//                     {/* Action button container operations */}
+//                     <div className="w-full md:w-auto flex items-center justify-end shrink-0">
+//                       <button
+//                         type="button"
+//                         disabled={isRowProcessing}
+//                         onClick={() => handleApprove(reqItem._id)}
+//                         className="w-full md:w-36 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/10"
+//                       >
+//                         {isRowProcessing ? (
+//                           <Loader2 size={14} className="animate-spin" />
+//                         ) : (
+//                           <CheckCircle size={14} />
+//                         )}
+//                         Authorize Branch
+//                       </button>
+//                     </div>
+//                   </div>
+//                 );
+//               })}
+//             </div>
+//           )}
+          
+//           {approveError && (
+//             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-2 text-red-400 text-xs font-bold mt-4">
+//               <AlertTriangle size={14} /> System Execution Error: {approveError}
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default SuperAdmin;
+
+
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
-// Icons for a professional touch
+import { useNavigate } from "react-router-dom";
 import { 
-  Users, 
   CheckCircle, 
   AlertTriangle, 
-  ShieldAlert, 
   Loader2, 
   ExternalLink,
-  ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  LogOut,
+  Building,
+  Calendar,
+  MessageSquare
 } from "lucide-react";
 
 function readAdminRole() {
@@ -18,210 +274,244 @@ function readAdminRole() {
     const raw = localStorage.getItem("admin");
     if (!raw) return null;
     return JSON.parse(raw).role ?? null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 const SuperAdmin = () => {
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [admins, setAdmins] = useState([]); 
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null); 
   const [approveError, setApproveError] = useState("");
-  const [superAdminCheck, setSuperAdminCheck] = useState("loading");
-  const [canApprove, setCanApprove] = useState(false);
-  const [devBypassActive, setDevBypassActive] = useState(false);
-  const [capabilityLoaded, setCapabilityLoaded] = useState(false);
-  const [authRejected, setAuthRejected] = useState(false);
+  const [remarks, setRemarks] = useState({}); 
 
-  const isSuperAdmin = useMemo(() => readAdminRole() === "super_admin", []);
+  const adminProfile = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("admin")) || {}; } catch { return {}; }
+  }, []);
 
-  const fetchRequests = async () => {
+  const fetchAllRequests = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_URL}/api/admin-request`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRequests(res.data);
-      setAuthRejected(false);
+      setAdmins(res.data);
     } catch (err) {
       console.error("Fetch Error:", err.response?.data || err.message);
-      const s = err.response?.status;
-      if (s === 401 || s === 403) setAuthRejected(true);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchRequests(); }, []);
+  useEffect(() => { 
+    if (readAdminRole() !== "super_admin") {
+      navigate("/super-admin/login");
+      return;
+    }
+    fetchAllRequests(); 
+  }, []);
 
-  useEffect(() => {
-    if (!API_URL) { setSuperAdminCheck("unknown"); return; }
-    axios.get(`${API_URL}/api/admin/has-super-admin`)
-      .then((r) => setSuperAdminCheck(r.data?.hasSuperAdmin ? "yes" : "no"))
-      .catch(() => setSuperAdminCheck("unknown"));
-  }, [API_URL]);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("admin");
+    navigate("/super-admin/login");
+  };
 
-  useEffect(() => {
-    if (!API_URL || !token) { setCapabilityLoaded(true); return; }
-    axios.get(`${API_URL}/api/admin/approve-capability`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((r) => {
-        setAuthRejected(false);
-        setCanApprove(!!r.data?.canApprove);
-        setDevBypassActive(!!r.data?.devBypassActive);
-      })
-      .catch((err) => {
-        setCanApprove(false);
-        setDevBypassActive(false);
-        const s = err.response?.status;
-        setAuthRejected(s === 401 || s === 403);
-      })
-      .finally(() => setCapabilityLoaded(true));
-  }, [API_URL, token]);
+  const handleApprove = async (id) => {
+    setApproveError("");
+    setActionLoading(id);
+    try {
+      await axios.put(
+        `${API_URL}/api/admin-request/approve/${id}`,
+        { superAdminRemarks: remarks[id] || "Approved by Administration" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await fetchAllRequests();
+    } catch (err) {
+      setApproveError(err.response?.data?.message || err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
-  const approveDisabled = capabilityLoaded ? !canApprove : true;
+  const handleRemarksChange = (id, val) => {
+    setRemarks(prev => ({ ...prev, [id]: val }));
+  };
+
+  // Date Formatting Helper
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const d = new Date(dateString);
+    return isNaN(d.getTime()) ? "N/A" : d.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  if (loading && admins.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
+        <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
+        <p className="text-slate-400 font-bold text-sm tracking-wide">Loading System Directory...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-900 text-slate-100 antialiased font-sans pb-12">
+      
+      {/* Navigation Header */}
+      <header className="bg-slate-800/60 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+              <Building className="text-white" size={18} />
+            </div>
+            <span className="font-black text-lg text-white">
+              Lib<span className="text-indigo-400">Sync Central</span>
+            </span>
+            <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider hidden sm:inline-block">
+              Super Admin Control Center
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-bold text-white leading-none mb-0.5">{adminProfile.name || "Root Admin"}</p>
+              <p className="text-[10px] text-slate-400 font-medium">System Director</p>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-slate-700 hover:bg-red-500/20 hover:text-red-400 text-slate-300 font-bold px-4 py-2 rounded-xl text-xs transition-all border border-slate-600"
+            >
+              <LogOut size={14} /> Sign Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto px-4 mt-8">
         
-        {/* Header Section */}
+        {/* Main Title Actions */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">System Administration</h1>
-            <p className="text-slate-500 mt-1 flex items-center gap-2">
-              <Users size={16} /> Manage pending library access requests
-            </p>
+            <h1 className="text-3xl font-black text-white tracking-tight">Access & Subscription Enquiries</h1>
+            <p className="text-slate-400 text-sm mt-1">Review operational durations and timeline parameters for branch registers.</p>
           </div>
           <button 
-            onClick={fetchRequests} 
-            className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm transition-all"
+            onClick={fetchAllRequests} 
+            disabled={loading}
+            className="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-white bg-slate-800 px-4 py-2.5 rounded-xl border border-slate-700 shadow-sm transition-all disabled:opacity-50"
           >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh Data
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh Requests List
           </button>
         </div>
 
-        {/* Informational Banners */}
-        <div className="space-y-4 mb-8">
-          {/* Dev Bypass Banner */}
-          {devBypassActive && (
-            <div className="flex items-center gap-3 bg-sky-50 border border-sky-100 p-3 rounded-xl text-sky-800 text-sm">
-              <ShieldCheck size={20} className="text-sky-500" />
-              <p><strong>Developer Mode:</strong> Bypass active. Any admin can approve requests for testing.</p>
-            </div>
-          )}
-
-          {/* Setup Required Banner */}
-          {!isSuperAdmin && superAdminCheck === "no" && (
-            <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex gap-3">
-                <ShieldAlert size={24} className="text-emerald-600 shrink-0" />
-                <div>
-                  <h3 className="font-bold text-emerald-900">First-time Setup Required</h3>
-                  <p className="text-emerald-700 text-sm">No super admin found. Create the primary account to begin.</p>
-                </div>
-              </div>
-              <Link to="/setup-super" className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap">
-                Initialize System
-              </Link>
-            </div>
-          )}
-
-          {/* Access Restricted Banner */}
-          {capabilityLoaded && !authRejected && !canApprove && superAdminCheck === "yes" && (
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-3 text-amber-900 text-sm shadow-sm">
-              <AlertTriangle size={20} className="text-amber-600 shrink-0" />
-              <div>
-                <p className="font-bold">Insufficient Permissions</p>
-                <p className="mt-1">Only super admins can approve. Log in with higher credentials or enable bypass in <code>.env</code>.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Session Expired */}
-          {capabilityLoaded && authRejected && (
-            <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center justify-between text-red-900 text-sm shadow-sm">
-              <div className="flex gap-3">
-                <ShieldAlert size={20} className="text-red-600" />
-                <p className="font-bold">Session Expired</p>
-              </div>
-              <Link to="/super-admin/login" className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-red-700 transition-colors">
-                Log In Again
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Requests List */}
+        {/* Primary Container Stacks */}
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-800 px-1">Pending Approval ({requests.length})</h2>
+          <h2 className="text-sm font-black text-slate-400 uppercase tracking-wider px-1">
+            Pending Queue ({admins.length})
+          </h2>
           
-          {loading && requests.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center text-slate-400">
-              <Loader2 className="animate-spin mb-4" size={32} />
-              <p>Fetching database records...</p>
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 shadow-sm">
-              <CheckCircle className="mx-auto mb-3 text-slate-300" size={40} />
-              <p className="font-medium text-lg text-slate-600">All caught up!</p>
-              <p className="text-sm">There are no pending admin requests at this time.</p>
+          {admins.length === 0 ? (
+            <div className="bg-white/5 border border-slate-700/50 rounded-2xl p-16 text-center shadow-inner">
+              <CheckCircle className="mx-auto mb-4 text-slate-600" size={44} />
+              <p className="font-bold text-lg text-slate-300">Queue Cleared</p>
+              <p className="text-sm text-slate-500 mt-1">There are no administrative subscription request parameters awaiting action.</p>
             </div>
           ) : (
-            requests.map((r) => (
-              <div key={r._id} className="group bg-white border border-slate-200 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md hover:border-indigo-100 transition-all duration-200 shadow-sm">
-                <div className="flex gap-4 items-center">
-                  <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg uppercase shadow-inner">
-                    {r.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{r.name}</h3>
-                    <p className="text-sm text-slate-500 font-medium">{r.email}</p>
-                    <div className="flex items-center gap-1.5 mt-1 text-xs text-indigo-500 font-bold bg-indigo-50/50 w-fit px-2 py-0.5 rounded-md">
-                      <ExternalLink size={12} />
-                      {r.libraryName}
+            <div className="space-y-4">
+              {admins.map((reqItem) => {
+                const isRowProcessing = actionLoading === reqItem._id;
+                
+                return (
+                  <div key={reqItem._id} className="bg-slate-800/40 border border-slate-700/40 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:border-slate-600/60 transition-all duration-200">
+                    
+                    {/* User profile parameters block */}
+                    <div className="flex gap-4 items-start flex-1">
+                      <div className="h-12 w-12 bg-slate-700 text-indigo-400 rounded-xl flex items-center justify-center font-black text-lg uppercase border border-slate-600 shadow-inner shrink-0 mt-1">
+                        {reqItem.name?.charAt(0) || "A"}
+                      </div>
+                      <div className="space-y-2 w-full">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-white text-base">{reqItem.name}</h3>
+                          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-md ${
+                            reqItem.requestType === "Extension" 
+                              ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" 
+                              : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          }`}>
+                            {reqItem.requestType || "New_Registration"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-400 font-medium">{reqItem.email}</p>
+                        
+                        {/* Branch info matrix tags */}
+                        <div className="flex items-center gap-2 flex-wrap pt-1">
+                          {reqItem.libraryName && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-indigo-400 font-bold bg-indigo-500/5 px-2.5 py-1 rounded-lg border border-indigo-500/10">
+                              <ExternalLink size={12} />
+                              {reqItem.libraryName} Branch
+                            </div>
+                          )}
+                          
+                          {/* 👇 TRANSITIONED DATE LAYOUTS */}
+                          <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10">
+                            <Calendar size={12} />
+                            Start: {formatDate(reqItem.accessStartDate)}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-[11px] text-rose-400 font-bold bg-rose-500/5 px-2.5 py-1 rounded-lg border border-rose-500/10">
+                            <Calendar size={12} />
+                            End: {formatDate(reqItem.accessEndDate)}
+                          </div>
+                        </div>
+
+                        {/* Inline comment field */}
+                        <div className="mt-3 max-w-sm relative">
+                          <div className="absolute top-3 left-3 text-slate-500">
+                            <MessageSquare size={14} />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Add approval comments/remarks..."
+                            value={remarks[reqItem._id] || ""}
+                            onChange={(e) => handleRemarksChange(reqItem._id, e.target.value)}
+                            disabled={isRowProcessing}
+                            className="w-full bg-slate-900/40 border border-slate-700/60 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="w-full md:w-auto flex items-center justify-end shrink-0">
+                      <button
+                        type="button"
+                        disabled={isRowProcessing}
+                        onClick={() => handleApprove(reqItem._id)}
+                        className="w-full md:w-36 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/10"
+                      >
+                        {isRowProcessing ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <CheckCircle size={14} />
+                        )}
+                        Authorize Branch
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="w-full sm:w-auto flex flex-col gap-2">
-                  <button
-                    type="button"
-                    disabled={approveDisabled}
-                    onClick={async () => {
-                      setApproveError("");
-                      try {
-                        await axios.put(
-                          `${API_URL}/api/admin-request/approve/${r._id}`,
-                          {},
-                          { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        fetchRequests();
-                      } catch (err) {
-                        setApproveError(err.response?.data?.message || err.message);
-                      }
-                    }}
-                    className={`w-full sm:w-32 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 ${
-                      approveDisabled
-                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                        : "bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95"
-                    }`}
-                  >
-                    {approveDisabled ? <ShieldAlert size={16} /> : <CheckCircle size={16} />}
-                    Approve
-                  </button>
-                </div>
-              </div>
-            ))
+                );
+              })}
+            </div>
           )}
           
           {approveError && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-red-600 text-xs font-bold animate-pulse">
-              <AlertTriangle size={14} /> {approveError}
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-2 text-red-400 text-xs font-bold mt-4">
+              <AlertTriangle size={14} /> System Execution Error: {approveError}
             </div>
           )}
         </div>

@@ -1,15 +1,22 @@
+
 import React, { useState } from "react";
 import axios from "axios";
-import { User, Mail, Lock, Library, Send, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { User, Mail, Lock, Library, Send, Loader2, AlertCircle, CheckCircle2, Calendar } from "lucide-react";
 
 const AdminRequest = () => {
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Set today's date as default baseline string (YYYY-MM-DD)
+  const todayStr = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     libraryName: "",
+    accessStartDate: todayStr,
+    accessEndDate: "",
+    requestType: "New_Registration"
   });
 
   const [loading, setLoading] = useState(false);
@@ -22,12 +29,28 @@ const AdminRequest = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (new Date(form.accessStartDate) >= new Date(form.accessEndDate)) {
+      setMessage({ text: "Access End Date must fall after the Start Date.", type: "error" });
+      return;
+    }
+
     try {
       setLoading(true);
       setMessage({ text: "", type: "" });
-      const res = await axios.post(`${API_URL}/api/admin-request/request`, form);
-      setMessage({ text: "Request sent successfully! Our team will review it.", type: "success" });
-      setForm({ name: "", email: "", password: "", libraryName: "" });
+      
+      await axios.post(`${API_URL}/api/admin-request/request`, form);
+      
+      setMessage({ text: "Access allocation request submitted successfully!", type: "success" });
+      setForm({ 
+        name: "", 
+        email: "", 
+        password: "", 
+        libraryName: "", 
+        accessStartDate: todayStr, 
+        accessEndDate: "", 
+        requestType: "New_Registration" 
+      });
     } catch (err) {
       setMessage({
         text: err.response?.data?.message || "Failed to send request. Please try again.",
@@ -45,7 +68,7 @@ const AdminRequest = () => {
           Library Admin Access
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600">
-          Submit your details to request administrative credentials.
+          Submit your details to request administrative credentials and custom access timeline.
         </p>
       </div>
 
@@ -55,7 +78,7 @@ const AdminRequest = () => {
             
             {/* Status Messages */}
             {message.text && (
-              <div className={`p-4 rounded-lg flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-1 ${
+              <div className={`p-4 rounded-lg flex items-center gap-3 text-sm ${
                 message.type === "error" ? "bg-red-50 text-red-700 border border-red-100" : "bg-emerald-50 text-emerald-700 border border-emerald-100"
               }`}>
                 {message.type === "error" ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
@@ -71,12 +94,9 @@ const AdminRequest = () => {
                   <User size={18} />
                 </div>
                 <input
-                  name="name"
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                  name="name" type="text" required
+                  value={form.name} onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md bg-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
                   placeholder="John Doe"
                 />
               </div>
@@ -90,12 +110,9 @@ const AdminRequest = () => {
                   <Mail size={18} />
                 </div>
                 <input
-                  name="email"
-                  type="email"
-                  required
-                  value={form.email}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                  name="email" type="email" required
+                  value={form.email} onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md bg-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
                   placeholder="admin@example.com"
                 />
               </div>
@@ -109,12 +126,9 @@ const AdminRequest = () => {
                   <Lock size={18} />
                 </div>
                 <input
-                  name="password"
-                  type="password"
-                  required
-                  value={form.password}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                  name="password" type="password" required
+                  value={form.password} onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md bg-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -128,20 +142,49 @@ const AdminRequest = () => {
                   <Library size={18} />
                 </div>
                 <input
-                  name="libraryName"
-                  type="text"
-                  required
-                  value={form.libraryName}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                  name="libraryName" type="text" required
+                  value={form.libraryName} onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md bg-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
                   placeholder="Central Public Library"
                 />
               </div>
             </div>
 
+            {/* 👇 UPDATED: Two Date Pickers instead of Plan Option dropdown selector */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Access Start Date</label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Calendar size={18} />
+                  </div>
+                  <input
+                    name="accessStartDate" type="date" required
+                    min={todayStr}
+                    value={form.accessStartDate} onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Access End Date</label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Calendar size={18} />
+                  </div>
+                  <input
+                    name="accessEndDate" type="date" required
+                    min={form.accessStartDate || todayStr}
+                    value={form.accessEndDate} onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
             <button
-              disabled={loading}
-              type="submit"
+              disabled={loading} type="submit"
               className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors duration-200"
             >
               {loading ? (
