@@ -6,24 +6,22 @@ import CreateShift from './pages/CreateShift'
 import CreateSeat from './pages/CreateSeat'
 import Sidebar from './pages/Sidebar' 
 import Login from './pages/Login'
-import SuperAdminLogin from './pages/SuperAdminLogin'
 import AdminRequest from './pages/AdminRequest'
 import SuperAdmin from './pages/SuperAdmin'
 import SetupFirstSuper from './pages/SetupFirstSuper'
 import AdminList from './pages/AdminList';
 import CreateRoom from './pages/CreateRoom'
 import './App.css'
-import CreateAdminDirectly from './pages/CreateAdminDirectly'; // 👈 Import new component
+import CreateAdminDirectly from './pages/CreateAdminDirectly';
 
 // ── Conditional Layout Component ──
 function AppLayout() {
   const location = useLocation();
   
-  // 1. Removed '/all-admins' from here so the sidebar stays visible!
+  // Is list mein jo routes honge unpar Sidebar nahi dikhega (Jaise Login, Request wagera)
   const hideSidebarRoutes = [
     '/', 
     '/login', 
-    '/super-admin/login', 
     '/setup-super', 
     '/request'
   ];
@@ -40,20 +38,19 @@ function AppLayout() {
         shouldHideSidebar ? 'ml-0' : 'ml-0 md:ml-[240px]'
       }`}>
         <Routes>
-          {/* Library Admin Auth */}
+          {/* Common Login Route for both Admin & Super Admin */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path='/request' element={<AdminRequest/>}/>
           
-          {/* Super Admin Auth & Setup */}
-          <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+          {/* Initial System Setup Route */}
           <Route path="/setup-super" element={<SetupFirstSuper />} />
           
-          {/* Core System Portals */}
+          {/* Core System Portals (Super Admin Screens) */}
           <Route path="/all-admins" element={<AdminList />} /> 
           <Route path='/super-admin' element={<SuperAdmin/>}/> 
 
-          {/* Standard Library Dashboard Core Routes */}
+          {/* Standard Library Dashboard Core Routes (Regular Admin Screens) */}
           <Route path="/users" element={<UserList />} />
           <Route path="/create-seat" element={<CreateSeat />} />
           <Route path="/create-shifts" element={<CreateShift />} />
@@ -68,6 +65,7 @@ function AppLayout() {
 function App() {
   return (
     <Router>
+      {/* AppLayout ko Router ke andar rakhna zaroori hai taaki useLocation() kaam kare */}
       <AppLayout />
     </Router>
   )

@@ -53,7 +53,7 @@ const SetupFirstSuper = () => {
     try {
       await axios.post(`${API_URL}/api/admin/setup-first-super`, form);
       setMessage({ text: "Account provisioned! Redirecting to login...", type: "success" });
-      setTimeout(() => navigate("/super-admin/login"), 2000);
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       setMessage({ text: err.response?.data?.message || "Setup failed", type: "error" });
     } finally {
@@ -86,8 +86,9 @@ const SetupFirstSuper = () => {
             <Terminal size={14} className="text-emerald-400" />
             <span>npm run promote:superadmin -- {form.email || 'user@email.com'}</span>
           </div>
+          
           <Link 
-            to="/super-admin/login" 
+            to="/login" 
             className="flex items-center justify-center gap-2 text-indigo-600 font-bold hover:text-indigo-700 transition-colors"
           >
             Go to Login <ArrowRight size={18} />
