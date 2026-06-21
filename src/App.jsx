@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import Registration from './pages/Registration'
 import UserList from './pages/UserList'
@@ -13,6 +13,7 @@ import AdminList from './pages/AdminList';
 import CreateRoom from './pages/CreateRoom'
 import './App.css'
 import CreateAdminDirectly from './pages/CreateAdminDirectly';
+import {syncNotificationPermission,listenForLiveMessages} from './firebaseConfig'; // apna correct path lagao
 
 // ── Conditional Layout Component ──
 function AppLayout() {
@@ -27,7 +28,16 @@ function AppLayout() {
   ];
   
   const shouldHideSidebar = hideSidebarRoutes.includes(location.pathname);
-
+// In App.jsx — AppLayout component
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  console.log("tokeeen app jsx",token);
+  if (token) {
+    syncNotificationPermission();
+    const unsubscribe = listenForLiveMessages(); // ✅ call it!
+    return () => unsubscribe(); // cleanup
+  }
+}, []);
   return (
     <div className="flex">
       {/* Render sidebar for authorized roles */}

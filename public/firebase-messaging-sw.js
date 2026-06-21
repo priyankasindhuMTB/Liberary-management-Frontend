@@ -1,27 +1,36 @@
-// public/firebase-messaging-sw.js
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+  importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
+  importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
-// 👈 Paste your real credentials here too for background message handling
-firebase.initializeApp({
-  apiKey: "AIzaSyCQWoZieh3J3SqPRxr8x5Uq57CCDnkYanw",
-  authDomain: "librarymanagement-af34f.firebaseapp.com",
-  projectId: "librarymanagement-af34f",
-  storageBucket: "librarymanagement-af34f.firebasestorage.app",
-  messagingSenderId: "900586787761",
-  appId: "1:900586787761:web:1be9fa28247c17d18b2390"
-});
+  firebase.initializeApp({
+    apiKey: "AIzaSyAHGf51Dj9iOO1L_NYaFacDhqEyVjnKbIY",
+    authDomain: "librarymanagement-85ba3.firebaseapp.com",
+    projectId: "librarymanagement-85ba3",
+    storageBucket: "librarymanagement-85ba3.firebasestorage.app",
+    messagingSenderId: "984114632226",
+    appId: "1:984114632226:web:46f265cbe1beb798fa5c7b",
+  });
 
-const messaging = firebase.messaging();
+  const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  messaging.onBackgroundMessage((payload) => {
+    self.registration.showNotification(
+      payload.notification?.title || "New Notification",
+      {
+        body: payload.notification?.body || "",
+        icon: "/vite.svg",
+        data: payload,
+      }
+    );
+  });
 
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/logo.png' 
-  };
+  self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+    // ✅ FIXED
+  const url = event.notification?.data?.FCM_MSG?.data?.url
+    || event.notification?.data?.url
+    || '/';
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
+    event.waitUntil(
+      clients.openWindow(url)
+    );
+  });

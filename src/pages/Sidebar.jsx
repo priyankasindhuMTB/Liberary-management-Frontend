@@ -4,6 +4,7 @@ import {
   Users, Armchair, Clock, ShieldCheck,
   LogOut, Library, ChevronRight, Menu, X, LayoutGrid, UserCheck
 } from "lucide-react";
+import { syncNotificationPermission, listenForLiveMessages } from "../firebaseConfig";
 
 const adminNavItems = [
   { path: "/users",         label: "Members",  icon: Users      },
@@ -25,33 +26,60 @@ const Sidebar = () => {
 
   const authPaths = ["/", "/login", "/setup-super", "/request"];
 
-  useEffect(() => {
+useEffect(() => {
     try {
-      const data = JSON.parse(localStorage.getItem("admin"));
+      const storedAdmin = localStorage.getItem("admin");
+      const storedToken = localStorage.getItem("token");
+
+      // 1. If viewing a public route, let it pass smoothly
+      if (authPaths.includes(location.pathname)) return;
+
+      // 2. Clear stale states and force login if credentials are missing
+      if (!storedAdmin || !storedToken) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("admin");
+        setAdmin(null);
+        navigate("/login");
+        return;
+      }
+
+      // 3. Parse user session data safely
+      const data = JSON.parse(storedAdmin);
       setAdmin(data);
 
-      if (data?.role === "super_admin" && !authPaths.includes(location.pathname)) {
-        const structuralPaths = ["/super-admin", "/all-admins"];
-        if (!structuralPaths.includes(location.pathname)) {
+      // ── 🔀 DYNAMIC ROLE GUARD ──
+      if (data?.role === "super_admin") {
+        const superAdminStructuralPaths = ["/super-admin", "/all-admins"];
+        
+        // Only redirect if they are trying to access a regular library admin workspace route
+        if (!superAdminStructuralPaths.includes(location.pathname)) {
           navigate("/all-admins"); 
         }
+      } else if (data?.role === "admin") {
+        // If they are a standard admin, keep them within their allowed workspace views
+        const adminStructuralPaths = ["/users", "/create-seat", "/create-shifts", "/rooms"];
+        if (!adminStructuralPaths.includes(location.pathname)) {
+          navigate("/users");
+        }
       }
-    } catch { 
+    } catch (err) { 
+      console.error("Sidebar Guard Routing Error:", err);
+      localStorage.removeItem("token");
+      localStorage.removeItem("admin");
       setAdmin(null); 
+      navigate("/login"); // Fallback safely to login on unexpected errors
     }
   }, [location.pathname, navigate]);
-
-  useEffect(() => { 
+ useEffect(() => { 
     setIsOpen(false); 
   }, [location.pathname]);
 
-  const handleLogout = () => {
+const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("admin");
     setAdmin(null); 
     navigate("/login");
   };
-
   const hideSidebar = authPaths.includes(location.pathname);
 
   if (hideSidebar) return null;

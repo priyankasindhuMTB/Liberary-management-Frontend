@@ -1,69 +1,102 @@
-// src/firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import axios from "axios";
 
-// Your real configuration keys pulled from your project dashboard screen
 const firebaseConfig = {
-  apiKey: "AIzaSyCQWoZIeh3J3SqPRXr8x5Uq57CCDnkYanw",
-  authDomain: "librarymanagement-af34f.firebaseapp.com",
-  projectId: "librarymanagement-af34f",
-  storageBucket: "librarymanagement-af34f.firebasestorage.app",
-  messagingSenderId: "900586787761",
-  appId: "1:900586787761:web:1be9fa28247c17d18b2390"
+  apiKey: "AIzaSyAHGf51Dj9iOO1L_NYaFacDhqEyVjnKbIY",
+  authDomain: "librarymanagement-85ba3.firebaseapp.com",
+  projectId: "librarymanagement-85ba3",
+  storageBucket: "librarymanagement-85ba3.firebasestorage.app",
+  messagingSenderId: "984114632226",
+  appId: "1:984114632226:web:46f265cbe1beb798fa5c7b",
 };
 
 const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
+const messaging = getMessaging(app);
 
-/**
- * Requests browser push notification permission and handles saving
- * the generated token to the authenticated administrator account profile.
- * @param {string} adminEmail - The logged-in administrator's email address
- */
-// firebaseConfig.js — handleSubmit fix
-export const syncNotificationPermission = async () => { // ← email parameter hatao
+export const syncNotificationPermission = async () => {
+  console.log("🚀 syncNotificationPermission started");
   try {
+    // 1. Get the auth token FIRST to see if a user is logged in
+    const authToken = localStorage.getItem("token");
+    console.log("AUTH TOKEN:", authToken);
+
+    // If there is no logged-in user, DO NOT try to update the backend
+    if (!authToken) {
+      console.log("⚠️ No logged-in user found. Skipping backend FCM registration.");
+      return; 
+    }
+
     const permission = await Notification.requestPermission();
+    console.log("PERMISSION:", permission);
 
-    if (permission === "granted") {
-      const deviceToken = await getToken(messaging, {
-        vapidKey: "BBxnCqCESJ2XC3Ex8yB2LWq6N6TC4BM--pnjr_ALXIhPWkRhSvcdHINBzn6H_4sLYTbySQi3usUxN5UwCb6Rdkk"
-      });
+    if (permission !== "granted") {
+      console.warn("Notification permission denied");
+      return;
+    }
 
+    const registration = await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js"
+    );
+    console.log("SERVICE WORKER:", registration);
 
-      if (deviceToken) {
-        console.log("🎯 FCM Token:", deviceToken);
+    await navigator.serviceWorker.ready;
+    console.log("✅ Service Worker Ready");
 
-        const API_URL = import.meta.env.VITE_API_URL;
-        const authToken = localStorage.getItem("token");
+    const token = await getToken(messaging, {
+      vapidKey: "BKOfMx3hiubcA-XqdjQX4CtNXpjurxaNKRMnRbZJJCOMqgdXfxoIl4TV4cSNPGge23QZvwHIs-31mAHVVmcLTYM",
+      serviceWorkerRegistration: registration,
+    });
 
-        // ✅ Sirf fcmToken bhejo — backend JWT se admin identify karega
-        await axios.put(
-          `${API_URL}/api/admin/update-fcm-token`,
-          { fcmToken: deviceToken },
-          { headers: { Authorization: `Bearer ${authToken}` } }
-        );
+    console.log("✅ FCM Token:", token);
 
-        console.log("✅ FCM Token saved!");
-      }
+    // 2. Since we already verified authToken exists above, we can safely make the API call
+    if (token) {
+      const API_URL = import.meta.env.VITE_API_URL;
+
+      await axios.put(
+        `${API_URL}/api/admin/update-fcm-token`,
+        { fcmToken: token },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      console.log("✅ FCM token saved to backend", token);
     }
   } catch (error) {
-    console.error("❌ FCM Error:", error.message);
+    console.error("❌ FULL FCM ERROR:", error);
+    console.error("❌ ERROR CODE:", error.code);
+    console.error("❌ ERROR MESSAGE:", error.message);
   }
 };
-// Listener fallback for active browser windows to catch alerts live
-// firebaseConfig.js
-export const listenForLiveMessages = () => {
-  onMessage(messaging, (payload) => {
-    console.log("📨 Live message:", payload);
 
-    // Simple browser notification dikhao
+export const listenForLiveMessages = () => {
+  return onMessage(messaging, (payload) => {
+    console.log("🔥 FOREGROUND MESSAGE:", payload);
+    const title = payload.notification?.title || "New Notification";
+    const body = payload.notification?.body || "";
+    
+    // Console output structure ke hisab se exact custom url extract karna:
+    const targetUrl = payload.data?.url || payload.fcmOptions?.link || "/";
+
     if (Notification.permission === "granted") {
-      new Notification(payload.notification.title, {
-        body: payload.notification.body,
-        icon: "/logo.png"
+      // 1. Notification trigger points with clean metadata payload bindings
+      const foregroundNotification = new Notification(title, { 
+        body, 
+        icon: "/vite.svg",
+        data: { url: targetUrl } // Meta data reference wrap kiya
       });
+
+      // 2. ⚡ CLICK HANDLER (Yeh ab tak missing tha!)
+      foregroundNotification.onclick = (event) => {
+        event.preventDefault(); // Stop default browser event triggers
+        
+        // Window window window focus management setup handle karna
+        window.focus();
+        
+        // Dynamic path configuration structure processing array location route check redirect
+        window.location.href = targetUrl; 
+        
+        foregroundNotification.close();
+      };
     }
   });
 };
