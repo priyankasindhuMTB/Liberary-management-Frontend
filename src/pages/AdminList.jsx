@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { 
-  Users, Loader2, AlertCircle, Edit2, X, 
-  UserPlus, User, Mail, Lock, Library, Calendar, Plus, ShieldAlert
+import {
+  Users,
+  Loader2,
+  AlertCircle,
+  Edit2,
+  X,
+  UserPlus,
+  User,
+  Mail,
+  Lock,
+  Library,
+  Calendar,
+  Plus,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from 'react-hot-toast';
 
@@ -11,6 +22,15 @@ const AdminList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalAdmins, setTotalAdmins] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortField, setSortField] = useState("accessEndDate");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   // ── MODAL STATES ──
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,17 +58,31 @@ const AdminList = () => {
   const fetchAdmins = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/api/admin/all`, {
+      const params = new URLSearchParams({
+        page,
+        limit,
+        status: statusFilter,
+        sortField,
+        sortOrder,
+      });
+
+      if (searchQuery.trim()) {
+        params.set("search", searchQuery.trim());
+      }
+
+      const res = await axios.get(`${API_URL}/api/admin/all?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      // Safe check if data is an array directly
+
       if (Array.isArray(res.data)) {
         setAdmins(res.data);
-      } else if (res.data && Array.isArray(res.data.admins)) {
-        setAdmins(res.data.admins);
+        setTotalAdmins(res.data.length);
+        setTotalPages(1);
       } else {
-        setAdmins([]);
+        setAdmins(res.data.admins || []);
+        setTotalAdmins(res.data.total || 0);
+        setTotalPages(res.data.pages || 1);
+        setPage(res.data.page || 1);
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Failed to load admins directory";
@@ -67,13 +101,19 @@ const AdminList = () => {
       console.error(err);
     }
 
-    if (token) {
-      fetchAdmins();
-    } else {
+    if (!token) {
       setError("No token found. Please login again.");
       toast.error("Authentication token missing!");
+      return;
     }
+
+    fetchAdmins();
   }, [API_URL, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchAdmins();
+  }, [page, limit, statusFilter, sortField, sortOrder]);
 
   // ── OPEN MODAL FOR CREATE ──
   const openCreateModal = () => {
@@ -165,6 +205,27 @@ const AdminList = () => {
     }
   };
 
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    setPage(1);
+    fetchAdmins();
+  };
+
+  const handleStatusChange = (status) => {
+    setStatusFilter(status);
+    setPage(1);
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+    setPage(1);
+  };
+
   const formatDateLabel = (dateStr) => {
     if (!dateStr) return "Not Set";
     return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -208,6 +269,31 @@ const AdminList = () => {
         >
           <Plus size={16} /> Add New Admin
         </button>
+      </div>
+
+      {/* Main Controls */}
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <form onSubmit={handleSearchSubmit} className="flex items-center w-full sm:w-2/3">
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search admins by name or email"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none"
+          />
+          <button type="submit" className="ml-3 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm">Search</button>
+        </form>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {['All','Active','Inactive'].map((s) => (
+            <button key={s} onClick={() => handleStatusChange(s)} className={`px-3 py-2 rounded-full text-sm font-semibold ${statusFilter===s ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-700'}`}>
+              {s}
+            </button>
+          ))}
+
+          <select value={limit} onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }} className="ml-3 rounded-xl border border-slate-200 px-3 py-2 text-sm">
+            {[10,20,30,50].map(v => <option key={v} value={v}>{v} / page</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Main Table Screen View */}
@@ -295,6 +381,16 @@ const AdminList = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-sm text-slate-600">Showing <strong>{admins.length}</strong> of <strong>{totalAdmins}</strong></div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page<=1} className="px-3 py-2 rounded-xl border bg-white">Previous</button>
+          <div className="px-3 py-2">Page {page} / {totalPages}</div>
+          <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page>=totalPages} className="px-3 py-2 rounded-xl border bg-white">Next</button>
+        </div>
       </div>
 
       {/* ── DYNAMIC DIALOG MODAL ── */}
