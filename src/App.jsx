@@ -1,66 +1,57 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
-import Registration from './pages/Registration'
 import UserList from './pages/UserList'
 import CreateShift from './pages/CreateShift'
 import CreateSeat from './pages/CreateSeat'
 import Sidebar from './pages/Sidebar' 
 import Login from './pages/Login'
-import AdminRequest from './pages/AdminRequest'
-import SuperAdmin from './pages/SuperAdmin'
+import AdminRegister from './pages/AdminRegister'
 import SetupFirstSuper from './pages/SetupFirstSuper'
 import AdminList from './pages/AdminList';
 import CreateRoom from './pages/CreateRoom'
 import './App.css'
 import CreateAdminDirectly from './pages/CreateAdminDirectly';
-import {syncNotificationPermission,listenForLiveMessages} from './firebaseConfig'; // apna correct path lagao
+import {syncNotificationPermission,listenForLiveMessages} from './firebaseConfig';
+import { Toaster } from 'react-hot-toast';
 
-// ── Conditional Layout Component ──
 function AppLayout() {
   const location = useLocation();
   
-  // Is list mein jo routes honge unpar Sidebar nahi dikhega (Jaise Login, Request wagera)
   const hideSidebarRoutes = [
     '/', 
     '/login', 
     '/setup-super', 
-    '/request'
+    '/register'
   ];
   
   const shouldHideSidebar = hideSidebarRoutes.includes(location.pathname);
-// In App.jsx — AppLayout component
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  console.log("tokeeen app jsx",token);
-  if (token) {
-    syncNotificationPermission();
-    const unsubscribe = listenForLiveMessages(); // ✅ call it!
-    return () => unsubscribe(); // cleanup
-  }
-}, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      syncNotificationPermission();
+      const unsubscribe = listenForLiveMessages();
+      return () => unsubscribe();
+    }
+  }, []);
+
   return (
     <div className="flex">
-      {/* Render sidebar for authorized roles */}
+      <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
       {!shouldHideSidebar && <Sidebar />}
 
-      {/* Dynamic margin layouts handling sidebar space transitions */}
       <main className={`flex-1 min-h-screen bg-slate-50 pb-16 md:pb-0 ${
         shouldHideSidebar ? 'ml-0' : 'ml-0 md:ml-[240px]'
       }`}>
         <Routes>
-          {/* Common Login Route for both Admin & Super Admin */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
-          <Route path='/request' element={<AdminRequest/>}/>
+          <Route path="/register" element={<AdminRegister />} />
           
-          {/* Initial System Setup Route */}
           <Route path="/setup-super" element={<SetupFirstSuper />} />
           
-          {/* Core System Portals (Super Admin Screens) */}
           <Route path="/all-admins" element={<AdminList />} /> 
-          <Route path='/super-admin' element={<SuperAdmin/>}/> 
 
-          {/* Standard Library Dashboard Core Routes (Regular Admin Screens) */}
           <Route path="/users" element={<UserList />} />
           <Route path="/create-seat" element={<CreateSeat />} />
           <Route path="/create-shifts" element={<CreateShift />} />
@@ -75,7 +66,6 @@ useEffect(() => {
 function App() {
   return (
     <Router>
-      {/* AppLayout ko Router ke andar rakhna zaroori hai taaki useLocation() kaam kare */}
       <AppLayout />
     </Router>
   )

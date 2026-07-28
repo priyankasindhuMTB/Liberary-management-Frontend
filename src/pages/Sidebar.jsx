@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
-  Users, Armchair, Clock, ShieldCheck,
+  Users, Armchair, Clock,
   LogOut, Library, ChevronRight, Menu, X, LayoutGrid, UserCheck
 } from "lucide-react";
-import { syncNotificationPermission, listenForLiveMessages } from "../firebaseConfig";
-
 const adminNavItems = [
   { path: "/users",         label: "Members",  icon: Users      },
   { path: "/create-seat",   label: "Seats",    icon: Armchair   },
@@ -14,8 +12,7 @@ const adminNavItems = [
 ];
 
 const superAdminNavItems = [
-  { path: "/super-admin",   label: "Pending Requests", icon: ShieldCheck },
-  { path: "/all-admins",    label: "Approved Admins",  icon: UserCheck   },
+  { path: "/all-admins", label: "All Admins", icon: UserCheck },
 ];
 
 const Sidebar = () => {
@@ -24,17 +21,15 @@ const Sidebar = () => {
   const [admin, setAdmin] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const authPaths = ["/", "/login", "/setup-super", "/request"];
+  const authPaths = ["/", "/login", "/setup-super", "/register"];
 
 useEffect(() => {
     try {
       const storedAdmin = localStorage.getItem("admin");
       const storedToken = localStorage.getItem("token");
 
-      // 1. If viewing a public route, let it pass smoothly
       if (authPaths.includes(location.pathname)) return;
 
-      // 2. Clear stale states and force login if credentials are missing
       if (!storedAdmin || !storedToken) {
         localStorage.removeItem("token");
         localStorage.removeItem("admin");
@@ -43,20 +38,16 @@ useEffect(() => {
         return;
       }
 
-      // 3. Parse user session data safely
       const data = JSON.parse(storedAdmin);
       setAdmin(data);
 
-      // ── 🔀 DYNAMIC ROLE GUARD ──
       if (data?.role === "super_admin") {
-        const superAdminStructuralPaths = ["/super-admin", "/all-admins"];
+        const superAdminStructuralPaths = ["/all-admins", "/create-admin-direct"];
         
-        // Only redirect if they are trying to access a regular library admin workspace route
         if (!superAdminStructuralPaths.includes(location.pathname)) {
           navigate("/all-admins"); 
         }
       } else if (data?.role === "admin") {
-        // If they are a standard admin, keep them within their allowed workspace views
         const adminStructuralPaths = ["/users", "/create-seat", "/create-shifts", "/rooms"];
         if (!adminStructuralPaths.includes(location.pathname)) {
           navigate("/users");
@@ -67,7 +58,7 @@ useEffect(() => {
       localStorage.removeItem("token");
       localStorage.removeItem("admin");
       setAdmin(null); 
-      navigate("/login"); // Fallback safely to login on unexpected errors
+      navigate("/login");
     }
   }, [location.pathname, navigate]);
  useEffect(() => { 
