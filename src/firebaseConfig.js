@@ -2,6 +2,8 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import axios from "axios";
 import toast from "react-hot-toast";
+import React from "react";
+import FirebaseToast from "./Components/FirebaseToast";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAHGf51Dj9iOO1L_NYaFacDhqEyVjnKbIY",
@@ -15,6 +17,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
+/* ============================================
+   SYNC FCM TOKEN WITH BACKEND
+   ============================================ */
 export const syncNotificationPermission = async () => {
   try {
     const authToken = localStorage.getItem("token");
@@ -50,32 +55,50 @@ export const syncNotificationPermission = async () => {
   }
 };
 
+/* ============================================
+   LISTEN FOR LIVE FOREGROUND MESSAGES
+   Shows ONLY the professional in-app toast
+   ============================================ */
 export const listenForLiveMessages = () => {
   return onMessage(messaging, (payload) => {
     const title = payload.notification?.title || "New Notification";
     const body = payload.notification?.body || "";
-    const targetUrl = payload.data?.url || "/";
+    const targetUrl = payload.data?.url || null;
 
-    // In-app toast (always visible while logged in)
-    toast(`${title}\n${body}`, {
-      icon: "🔔",
-      duration: 6000,
-      style: { whiteSpace: "pre-line", maxWidth: 420 },
-    });
+    // Check if tab is visible
+    const isTabVisible = !document.hidden;
 
-    // Browser notification while tab is open
-    if (Notification.permission === "granted") {
-      const n = new Notification(title, {
-        body,
-        icon: "/vite.svg",
-        data: { url: targetUrl },
-      });
-      n.onclick = (event) => {
-        event.preventDefault();
-        window.focus();
-        if (targetUrl) window.location.href = targetUrl;
-        n.close();
-      };
+    if (isTabVisible) {
+      // ✅ Show beautiful in-app toast
+      toast.custom(
+        (t) =>
+          React.createElement(FirebaseToast, {
+            t,
+            title,
+            body,
+            targetUrl,
+          }),
+        {
+          duration: 6000,
+          position: "top-right",
+        }
+      );
+    } else {
+      // ✅ Tab hidden → Show browser notification
+      if (Notification.permission === "granted") {
+        const n = new Notification(title, {
+          body,
+          icon: "/vite.svg",
+          badge: "/vite.svg",
+          data: { url: targetUrl },
+        });
+        n.onclick = (event) => {
+          event.preventDefault();
+          window.focus();
+          if (targetUrl) window.location.href = targetUrl;
+          n.close();
+        };
+      }
     }
   });
 };
