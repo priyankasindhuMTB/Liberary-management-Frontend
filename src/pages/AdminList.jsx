@@ -186,20 +186,23 @@ const AdminList = () => {
     const currentLibrary = form.libraryName;
 
       if (modalMode === "create") {
-        console.log("📤 Sending form data:", form); // ← Add this
+        console.log("📤 Sending form data:", form);
         const res = await axios.post(
           `${API_URL}/api/admin/create-direct`,
           form,
           { headers }
         );
-        // ✅ Save name BEFORE resetting form
-       
+
+        const registeredName = currentName || form.name || res.data?.admin?.name;
+        const registeredLibrary =
+          currentLibrary || form.libraryName || res.data?.admin?.libraryName || "the selected library";
+
         setForm(initialFormState);
-        // Success
-  toast.success(
-    `${registeredName} has been successfully registered under "${registeredLibrary}".`,
-    { id: toastLoadingId }
-  )
+
+        toast.success(
+          `${registeredName} has been successfully registered under "${registeredLibrary}".`,
+          { id: toastLoadingId }
+        );
       } else {
         const res = await axios.put(
           `${API_URL}/api/admin/update-direct/${selectedAdminId}`,
